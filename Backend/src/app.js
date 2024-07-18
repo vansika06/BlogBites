@@ -5,6 +5,8 @@ import {Server} from "socket.io"
 import http from "http"
 import { Message } from "./models/message.models.js"
 import mongoose from "mongoose"
+import { Follow } from "./models/followers.models.js"
+import { Request } from "./models/request.models.js"
 //creating a http server using socket io and express
 const app=express()
 app.use(cors({
@@ -54,8 +56,55 @@ io.on("connection",(socket)=>{
        }
     })
 
+    socket.on("acceptReq",async(data)=>{
+        try {
+            console.log(data)
+            const following=await Follow.findOne({follower:data.sender,blogger:data.receiver})
+            if(!following){
+                const res=await Follow.create({follower:data.sender,blogger:data.receiver})
 
+                if(res){
+                    console.log("created")
+                    const t=await Request.findOneAndDelete({sender:data.sender,receiver:data.receiver})
+                    console.log(t)
+                    const onlineUserSocketId1=onlineUsers[data.sender]
+                    const onlineUserSocketId2=onlineUsers[data.receiver]
+                    console
+                    if (onlineUserSocketId1) {
+                        io.to(onlineUserSocketId1).emit('reqAccepted',data)
+                    }
+                    if(onlineUserSocketId2){
+                        io.to(onlineUserSocketId2).emit('reqAccepted',data)
+                    }
+                }
+            }
+            
+            
+            
+        } catch (error) {
+            console.log(error)
+        }
+    })
 
+    socket.on("declineReq",async(data)=>{
+        try {
+            const t=await Request.findOneAndDelete({sender:data.sender,receiver:data.receiver})
+            if(t){
+            const onlineUserSocketId1=onlineUsers[data.sender]
+            const onlineUserSocketId2=onlineUsers[data.receiver]
+                    console
+                    if (onlineUserSocketId1) {
+                        io.to(onlineUserSocketId1).emit('reqdeclined',data)
+                    }
+                    if(onlineUserSocketId2){
+                        io.to(onlineUserSocketId2).emit('reqdeclined',data)
+                    }
+                    
+                }
+        } catch (error) {
+            console.log(error)
+        }
+    })
 
     socket.on("disconnect",()=>{
         console.log("user disconnected",socket.id)
@@ -92,7 +141,7 @@ import followRouter from "./Routes/follow.routes.js"
 import likeRouter from  './Routes/like.routes.js'
 import commentRouter from './Routes/comments.routes.js'
 import messageRouter from './Routes/message.routes.js'
-
+import requestRouter from './Routes/request.routes.js'
 //routes declaration
 
 app.use("/api/v1/users",userRouter)
@@ -101,4 +150,26 @@ app.use("/api/v1/follow",followRouter)
 app.use("/api/v1/like",likeRouter)
 app.use("/api/v1/comment",commentRouter)
 app.use("/api/v1/message",messageRouter)
+app.use("/api/v1/req",requestRouter)
+/*
+app.use((err, req, res, next) => {
+    if (err instanceof ApiError) {
+        return res.status(err.statusCode).json({
+            success: err.success,
+            message: err.message,
+            errors: err.errors
+        });
+    }
+    
+    // Handle other types of errors
+    return res.status(500).json({
+        success: false,
+        message: "Internal Server Error"
+    });
+});
+
+
+*/
+
+
 export {app,io,server}

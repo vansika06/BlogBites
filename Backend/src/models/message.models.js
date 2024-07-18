@@ -6,7 +6,7 @@ const messageSchema=new mongoose.Schema({
     },
     message:{
         type:String,
-        required:true
+       
     }
     ,
     sentBy:{
@@ -16,6 +16,10 @@ const messageSchema=new mongoose.Schema({
     seen:{
         type:Boolean,
         default:false
+    },
+    image:{
+        type:String,
+        default:""
     }
 },{timestamps:true})
 export const Message=mongoose.model("Message",messageSchema)

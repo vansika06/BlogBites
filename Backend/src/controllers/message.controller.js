@@ -6,8 +6,10 @@ import { Message } from "../models/message.models.js";
 import {User} from '../models/user.models.js'
 import  mongoose,{ObjectId} from "mongoose";
 import { receiverSocket,io } from "../app.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 const sendMessage=asyncHandler(async(req,res)=>{
     const {receiverId,msg}=req.body
+    
     console.log(msg)
     const receiver= await User.find({_id:receiverId})
     if(!receiver){
@@ -19,13 +21,21 @@ const sendMessage=asyncHandler(async(req,res)=>{
     })
     
     //means no earlier conversation
+   
+        var imgPath=req.file?.path
+       
+    
+   // console.log(imgPath)
+    if(imgPath){
+        var uploadedImg=await uploadOnCloudinary(imgPath)
+    }
+
+   // console.log(uploadedImg)
     if(!conversation){
-        // conversation = new Conversation({       participants: [senderId, receiverId], 
-        //           lastMsg: {         sender: senderId,         message: msg       }     });  
-        //               await conversation.save();
+                     
         conversation=await Conversation.create({
             participants: [senderId, receiverId], 
-                  lastMsg: {sender: senderId, message: msg} 
+                  lastMsg: {sender: senderId, message: msg,} 
         })
         if(!conversation){
             throw new ApiError(400,"unable to send")
@@ -37,11 +47,13 @@ const sendMessage=asyncHandler(async(req,res)=>{
     const newMessage=await Message.create({
         conversationId:conversation._id,
         message:msg,
-        sentBy:senderId
+        sentBy:senderId,
+        image:uploadedImg?uploadedImg.url:""
 
     })
     //after saving the msg into  the db send it  directly to the receiver
     const receiverSocketId=receiverSocket(receiverId)
+    console.log(receiverSocketId)
     if(receiverSocketId){
        io.to(receiverSocketId).emit("newMessage",newMessage)
     }

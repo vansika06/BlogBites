@@ -50,6 +50,10 @@ const userSchema=new mongoose.Schema({
      },
      forgetTokenExpiry:{
         type:Date
+     },
+     isVerified:{
+        type:Boolean,
+        default:false
      }
         
     

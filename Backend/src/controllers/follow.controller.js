@@ -5,8 +5,8 @@ import {User} from "../models/user.models.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken"
 import Mongoose, { isValidObjectId,ObjectId }  from "mongoose";
-
-import { Follower } from "../models/followers.models.js";
+import { receiverSocket,io } from "../app.js";
+import { Follow } from "../models/followers.models.js";
 const toggleFollow=asyncHandler(async(req,res)=>{
     const {blogger}=req.body
     console.log(blogger)
@@ -14,10 +14,10 @@ const toggleFollow=asyncHandler(async(req,res)=>{
     //if(!isValidObjectId(blogger)){
     ///    throw new ApiError(404,"Invalid object id")
     //}
-    const following=await Follower.findOne({follower:req.user._id,blogger})
+    const following=await Follow.findOne({follower:req.user._id,blogger})
     console.log(following)
     if(!following){
-        const follow=await Follower.create({follower:req.user._id,blogger})
+        const follow=await Follow.create({follower:req.user._id,blogger})
     if(!follow){
         throw new ApiError(500,"something went wrong while following")
     }
@@ -41,5 +41,22 @@ else{
     .json(new ApiResponse(200,null,"successfully unfollowed"))
 }
 })
+
+const sendFollow=asyncHandler(async(req,res)=>{
+    const {blogger}=req.body
+    console.log(blogger)
+    const objectId = new Mongoose.Types.ObjectId(blogger);
+    const user=await User.findById(objectId)
+    if(!user){
+        throw new ApiError(400,"User not found")
+    }
+    const receiverSocketId=receiverSocket(objectId)
+    io.to(receiverSocketId).emit()
+})
+
+
+
+
+
 
 export {toggleFollow} 

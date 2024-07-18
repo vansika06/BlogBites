@@ -15,14 +15,20 @@ import Home from './components/Home.jsx'
 import Particular from './components/Particular.jsx'
 import ChatPage from './components/ChatPage.jsx'
 import { SocketContextProvider } from './context/socketcontext.jsx'
+import Verification from './components/Verification.jsx'
+import Landing from './components/Landing.jsx'
+import Test from './components/Test.jsx'
+import Postlayout from './components/Postlayout.jsx'
+import Messagecontainer from './components/Chattest.jsx'
 //import { Header } from './components/index.js'
+
 const router=createBrowserRouter([{
   path:'/',
   element:<App/>,
   children:[
     {
       path:'/',
-      //element:<Home/>
+      element:<Landing/>
     },
     {
       path:'/login',
@@ -70,7 +76,7 @@ const router=createBrowserRouter([{
           element:(
           //  <Protected authentication>
              // {" "}
-              <Home/>
+              <Postlayout/>
            // </Protected>
           ),
         },
@@ -91,6 +97,14 @@ const router=createBrowserRouter([{
                 <ChatPage/>
               //  </Protected>
             ),},
+            {
+              path: "/verify",
+              element: (
+                  // <Protected authentication>
+                  //     {" "}
+                  <Verification/>
+                //  </Protected>
+              ),},
     ]}])/*
     {
       path:"/all-posts",

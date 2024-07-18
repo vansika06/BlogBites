@@ -8,7 +8,7 @@ const authSlice=createSlice({
     initialState,
     reducers:{
         login:(state,action)=>{
-            state.status=true;//jaise login hoga state m true and userdata m y set kr denge
+           // state.status=true;//jaise login hoga state m true and userdata m y set kr denge
             state.userData=action.payload
 
 
@@ -16,8 +16,11 @@ const authSlice=createSlice({
         logout:(state,action)=>{
             state.status=false
             state.userData=null;
+        },
+        isVerified:(state,action)=>{
+            state.status=true;
         }
     }
 })
-export const {login,logout}=authSlice.actions
+export const {login,logout,isVerified}=authSlice.actions
 export default authSlice.reducer

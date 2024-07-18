@@ -3,10 +3,8 @@ import { ScanSearch } from 'lucide-react';
 function Nochat() {
   return (
     <div>
-      <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-          
-        </div>
-        <div className="flex-grow p-4 overflow-y-auto">
+      
+        <div className="flex-grow p-4 overflow-y-auto bg-gray-200">
           {/* Chat messages */}
           <div className="space-y-4">
             <div className="flex justify-center mt-50 ">

@@ -44,7 +44,7 @@ else{
 const getAllLikedPosts=asyncHandler(async(req,res)=>{
     const likedPosts=await Like.aggregate([
         {$match:{
-            user:req.user._id
+            user:req.user._id.toString()
         }},
         {
             $lookup:{

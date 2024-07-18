@@ -7,6 +7,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken"
 import Mongoose from "mongoose";
 import {ObjectId} from "mongoose"
+import { fetchBlog, fetchParticular } from "../utils/blog.js";
 const publishPost=asyncHandler(async(req,res)=>{
     const {title,thumbnail,description,category,status}=req.body
     if([title,thumbnail,description,category,status].some((field)=>(field?.trim()===""))){
@@ -39,39 +40,8 @@ const publishPost=asyncHandler(async(req,res)=>{
              
             })
             
-//    const createdBlog= await Blog.aggregate(
-//       [{
-//          $match:{
-//             _id: new mongoose.Types.ObjectId(blog._id)
-
-//            } 
-// },{
-//       $lookup:{
-//          from:"users",
-//          localField:"owner",
-//          foreignField:"_id",
-//          as:"owner",
-//          pipeline:[
-//             {
-//                $project:{
-//                   fullname:1,
-//                   username:1,
-//                   avatar:1,
-//                   email:1,
-//                   postHistory:1
-//                }
-//             },]
-//       }
-// },{
-//    $addFields:{
-//      ownerDetails:{
-//         $first:"$owner"
-//      }
-//    }  
-//   }
-// ]
-//    )
-  // await createdBlog.save();
+  user.postHistory.push(blog._id)
+  await user.save()
  const createBlog=await Blog.findById(blog._id)
  console.log(createBlog)
    if(!createBlog){
@@ -101,68 +71,150 @@ const getPostById=asyncHandler(async(req,res)=>{
    const {blogId}=req.params
    const objectId = new Mongoose.Types.ObjectId(blogId);
   // const blog=await Blog.findById(id)
-   const createdBlog=await Blog.aggregate([
-    {  $match:{
-         _id:objectId
-      }},
-      {
-         $lookup:{
-            from:"users",
-            localField:"owner",
-            foreignField:"_id",
-            as:"ownerDetails",
+//   const createdBlog=await fetchBlog({
+//          _id:blogId
+//    },null,0,1)
+    const createdBlog=await Blog.aggregate([
+     {  $match:{
+          _id:objectId
+       }},
+     {
+          $lookup:{
+             from:"users",
+             localField:"owner",
+             foreignField:"_id",
+             as:"ownerDetails",
             pipeline:[
-                            {
-                               $project:{
-                                  fullname:1,
-                                  username:1,
+               {
+                  $lookup:{
+                     from:"follows",//hmlog Subscription aise save the models banate hue vo db m subscriptions
+                     localField:"_id",
+                     foreignField:"blogger",
+                     as:"followers"
+                  }
+               },
+               {
+                  $lookup:{
+                     from:"requests",
+                     localField:'_id',
+                     foreignField:'receiver',
+                     as:"requests"
+                  }
+               },
+               {
+                  $addFields:{
+                     followersCount:{
+                        $size:"$followers"
+                     },
+                     
+                     isFollowing:{
+                        $cond:{
+                           if:{$in:[req.user?._id,"$followers.follower"]},
+                           then:true,
+                           else:false
+                        }  
+                     },
+                     reqStat:{
+                        $cond:{
+                           if:{$in:[req.user?._id,"$requests.sender"]},
+                           then:true,
+                           else:false
+                        }
+
+                     }
+                  },
+                  
+               },
+               
+             
+                             {
+                                $project:{
+                                   fullname:1,
+                                   username:1,
                                   avatar:1,
-                                  email:1,
-                                  postHistory:1,
-                                  _id:1
-                               }
+                                   email:1,
+                                   postHistory:1,
+                                  _id:1,
+                                  followers:1,
+                                  followersCount:1,
+                                  isFollowing:1,
+                                  reqStat:1
+                                }
                             },]
-         }
-      },{
+          }
+       },{
+          $lookup:{
+             from:"likes",
+             localField:"_id",
+             foreignField:"blog",
+             as:"likedBy",
+            
+          }
+       },{
          $lookup:{
-            from:"likes",
-            localField:"_id",
-            foreignField:"blog",
-            as:"likedBy"
-         }
-      },{
-        $lookup:{
-         from:"comments",
-         localField:"_id",
-         foreignField:"blog",
-         as:"CommentedBy"
-        } 
-      }
-      ,
-       {
-              $addFields:{
-                ownerDetails:{
-                   $first:"$ownerDetails"
-                },
-                likes:{
-                  $size:"$likedBy"
-                },
-                comments:{
-                  $size:"$commentedBy"
-                },
+          from:"comments",
+          localField:"_id",
+          foreignField:"blog",
+          as:"CommentedBy",
+          pipeline:[
+            {
+               $lookup:{
+                  from:"users",
+                  localField:"user",
+                  foreignField:'_id',
+                  as:"commentOwner",
+                  pipeline:[
+                     {
+                        $project:{
+                           fullname:1,
+                           username:1,
+                          avatar:1,
+                           email:1,
+                           
+                          _id:1
+                        }
+                    },
+                  ]
+
+               }
+            },
+           
+           {
+            $addFields:{
+               commentOwner:{
+                  $first:"$commentOwner"
+               } 
+            }
+           }
+
+          ]
+         } 
+       }
+       ,
+        {
+               $addFields:{
+                 ownerDetails:{
+                    $first:"$ownerDetails"
+                 },
+                 likes:{
+                   $size:{$ifNull:["$likedBy",[]]}
+                 },
+                 comments:{
+                   $size:{$ifNull:["$commentedBy",[]]}
+                 },
                 isLiked:{
                   $cond:{
-                     if:{$in:[req.user?._id,"$likedBy.likedBy"]},
-                     then:true,
-                     else:false
-                  }  
-               }
-              }  
-             }
-   ])
-   console.log(1);
-   console.log(createdBlog)
-   if(createdBlog.length==0){
+                      if:{$in:[req.user?._id,{$ifNull:["$likedBy.likedBy",[]]}]},
+                      then:true,
+                      else:false
+                   }  
+                }
+               }  
+              }
+    ])
+   // console.log(1);
+    console.log(createdBlog)
+   if(!createdBlog.length===0){
       throw new ApiError(400,"Blog not found")
    }
    return res
@@ -184,7 +236,7 @@ const getAllPost=asyncHandler(async(req,res)=>{
 })
 const getPostByCategory=asyncHandler(async(req,res)=>{
    const {category}=req.params
-   const blog=await Blog.find({category:category})
+   const blog=await fetchBlog({category:category},null,0,6)
    if(!blog){
       throw new ApiError(404,"not found")
    }
@@ -225,34 +277,234 @@ const userDrafts=asyncHandler(async(req,res)=>{
    } 
 })
 const latestBlogs=asyncHandler(async(req,res)=>{
-   const blogs=await Blog.aggregate([{
-      $sort:{
-         createdAt:-1
-      }
+   const page=parseInt(req.query.p)||0
+   const blogsPerPage=15
+   const blogs=await fetchBlog({
+      status:"active"
    },
    {
-      $limit:5
-   }])
+      createdAt:-1
+   },
+   blogsPerPage*page,blogsPerPage
+)
+   // const blogs=await Blog.aggregate([{
+   //    $sort:{
+   //       createdAt:-1
+   //    }
+   // },
+   
+   // {$match:{
+   //       status:"active"
+   //    }
+
+   // },
+   // {
+   //    $lookup:{
+   //       from:"users",
+   //       localField:"owner",
+   //       foreignField:"_id",
+   //       as:"Ownerdetails",
+   //       pipeline:[
+   //          {
+   //             $project:{
+   //                fullname:1,
+   //                username:1,
+   //                avatar:1,
+
+   //             }
+   //          },]}},
+   //          {
+   //             $lookup:{
+   //                from:"likes",
+   //                localField:"_id",
+   //                foreignField:"blog",
+   //                as:"likedBy"
+   //             }
+   //          },{
+   //            $lookup:{
+   //             from:"comments",
+   //             localField:"_id",
+   //             foreignField:"blog",
+   //             as:"CommentedBy"
+   //            } 
+   //          }
+   //          ,
+   //           {
+   //                  $addFields:{
+   //                   Ownerdetails:{
+   //                       $first:"$Ownerdetails"
+   //                    },
+   //                    likes:{
+   //                      $size:{
+   //                         $ifNull:["$likedBy",[]]
+   //                      }
+   //                    },
+   //                    comments:{
+   //                      $size:{
+   //                         $ifNull:["$CommentedBy",[]]
+   //                      }
+   //                    },
+   //                    isLiked:{
+   //                      $cond:{
+   //                         if:{$in:[req.user?._id,{$ifNull:["$likedBy.likedBy",[]]}]},
+   //                         then:true,
+   //                         else:false
+   //                      }  
+   //                   }
+   //                  }  
+   //                 },
+   //                 {
+   //                   $limit:blogsPerPage
+   //                 },
+   //                 {
+   //                   $skip:
+   //                      blogsPerPage*page
+                     
+   //                 }
+         
+      
+
+   // ])
+   //console.log(blogs)
    //const blogs=await Blog.sort({createdAt:-1}).limit(7);
    if(blogs.length==0){
       return res
       .status(200)
-      .json(new ApiResponse(200,"no blogs","not fetched successfully"))
+      .json(new ApiResponse(200,null,"not fetched successfully"))
    }
    return res
       .status(200)
       .json(new ApiResponse(200, blogs,"fetched successfully"))
+})
+
+const getBlogsOfType=asyncHandler(async(req,res)=>{
+      const {type}=req.params
+      const page=parseInt(req.query.p)||0
+      const blogsPerPage=10
+    if(type==="video"){
+      // var videoBlogs=await Blog.find({
+      //    media: { $ne: null },
+      //    media: { $regex: /\.(mp4|avi|mov|wmv|flv)$/i }
+      // }).populate('owner','username fullname avatar _id')
+      
+      // .limit(blogsPerPage).skip(blogsPerPage*page)
+      var videoBlogs=await fetchBlog({media:{ $ne: null ,
+          $regex: /\.(mp4|avi|mov|wmv|flv)$/i }},null,blogsPerPage*page,blogsPerPage)
+      if(videoBlogs){   
+      videoBlogs.forEach((blog)=>
+      blog.isLiked=blog.liked.some((id)=>id.toString()===req.user?._id.toString()))}
+
+      
+      if(!videoBlogs){
+         throw new ApiError(400,"not found")
+      }
+      return res.status(200).json(new ApiResponse(200,videoBlogs,"Fetched successfully"))}
+      else if(type==="audio"){
+         // var audioblogs=await Blog.find({
+         //    media:{$ne:null},
+          
+         //     media: { $regex: /\.(mp3|wav|flac|aac|ogg)$/i }
+         // }).limit(blogsPerPage).skip(blogsPerPage*page)
+
+         var audioblogs=await fetchBlog({media:{ $ne: null ,
+            $regex: /\.(mp3|wav|flac|aac|ogg)$/i }},null,blogsPerPage*page,blogsPerPage)
+
+
+            if(audioblogs){   
+               audioblogs.forEach((blog)=>
+               blog.isLiked=blog.liked.some((id)=>id.toString()===req.user?._id.toString()))}
+         
+         if(!audioblogs){
+            throw new ApiError(400,"not found")
+         }
+         return res.status(200).json(new ApiResponse(200,audioblogs,"Fetched successfully"))}
+
+      
 })
 
 const trending=asyncHandler(async(req,res)=>{
+   const basis=req.query.q
+   const page=parseInt(req.query.p)||0
+   const blogsPerPage=15
+   if(basis==="likes"){
+     
+   
    const blogs=await Blog.aggregate([{
-      $sort:{
-         views:-1
+      $match:{
+         status:"active"
       }
    },
    {
-      $limit:5
-   }])
+      $lookup:{
+         from:"likes",
+         foreignField:"blog",
+         localField:"_id",
+         as:"liked"
+      }
+   },{
+      $addFields:{
+         likes:{
+            $size:{
+               $ifNull:["$liked",[]]
+            }
+         }
+      }
+   },{
+      $sort:{
+         likes:-1,
+      }},
+            {
+               $lookup:{
+                  from:"users",
+                  foreignField:"_id",
+                  localField:"owner",
+                  as:"ownerDetails",
+                  pipeline:[
+                     {
+                        $project:{
+                           username:1,
+                           fullname:1,
+                           avatar:1,
+                           _id:1
+                        }
+                     }
+                  ]
+               },
+
+            },
+            {
+               $lookup:{
+                from:"comments",
+                localField:"_id",
+                foreignField:"blog",
+                as:"CommentedBy"
+               } 
+             }
+             ,
+              {
+                     $addFields:{
+                       ownerDetails:{
+                          $first:"$ownerDetails"
+                       },
+                      
+                       comments:{
+                         $size:{$ifNull:["$CommentedBy",[]]}
+                       },
+                       isLiked:{
+                         $cond:{
+                            if:{$in:[req.user?._id,{$ifNull:["$liked.likedBy",[]]}]},
+                            then:true,
+                            else:false
+                         }  
+                      }
+                     }  
+                    },
+                   
+   {
+      $limit:blogsPerPage
+    },
+    
+])
    //const blogs=await Blog.sort({createdAt:-1}).limit(7);
    if(blogs.length==0){
       return res
@@ -263,23 +515,26 @@ const trending=asyncHandler(async(req,res)=>{
       .status(200)
       .json(new ApiResponse(200, blogs,"fetched successfully"))
 
-})
+}})
 
-const getLikes=asyncHandler(async(req,res)=>{
-   const  {blogId}=req.params
-   const objectId = new Mongoose.Types.ObjectId(blogId);
-   const blog=Blog.aggregate([
-      {
-         $match:{
-            _id:objectId
-         }
-      },{
-         $lookup:{
-            from:"likes",
-            localField:"bn"
-         }
-      }
-   ])
+const similarPosts=asyncHandler(async(req,res)=>{
+   const userId=req.query.u.toString()
+   const user=await User.findById(userId)
+   if(!user){
+      throw new ApiError(400,"User not found")
+   }
+   const userPosts=user.postHistory
+   console.log(userPosts)
+   if(userPosts.length>0){
+   userPosts.forEach((post)=>post.details=fetchParticular({_id:post}))
+   if(!userPosts){
+      throw new ApiError(400,"Unable to fetch")
+   }
+return res.status(200).json(new ApiResponse(200,userPosts," posts from this user")) 
+ }
+   else{
+      return res.status(200).json(new ApiResponse(200,null,"No more posts from this user"))
+   }
 })
 
 export{
@@ -291,5 +546,7 @@ export{
     updateBlog,
     getPostById,
     latestBlogs,
-    trending
+    trending,
+    getBlogsOfType,
+    similarPosts
 }

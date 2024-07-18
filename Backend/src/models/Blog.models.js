@@ -33,7 +33,7 @@ const blogSchema=new mongoose.Schema({
     },
     category:{
         type:String,
-        enum:["Health","Technology","Science","Entertainment","General","Business","Education"],
+        enum:["Health","Technology","Coding","Entertainment","General","Business"],
         required:true
     },
     status:{

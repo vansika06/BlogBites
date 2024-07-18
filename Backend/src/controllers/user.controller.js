@@ -3,6 +3,8 @@ import {ApiError} from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import {User} from "../models/user.models.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { sendEmail } from "../utils/email.js";
+import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import mongoose, { Mongoose } from "mongoose";
 const generateAccessAndRefreshToken=async(userId)=>{///jb pswd wgerah validate ho ja rha h tb yeh kr rhe isliye user obj jo banaye h usse asani se id nikal kr pass kr skte
@@ -38,7 +40,7 @@ const registerUser=asyncHandler(async(req,res)=>{
         throw new ApiError(400,"All fields are required")
    }
   const existedUser= await User.findOne({
-      $or:[{username},{password}]
+      $or:[{username},{email}]
    })
    if(existedUser){
       throw new ApiError(409,"User with email or username exists")
@@ -72,10 +74,15 @@ const avatarLocalPath=req.file?.path
   }
  const user=await User.create({fullname,
                avatar:avatar.url,
-               
+               verifyToken:null,
+               verifyTokenExpiry:null,
+               forgetToken:null,
+               forgetTokenExpiry:null,
+               isVerified:false,       
                email,
                password,
-               username:username.toLowerCase()
+               username:username.toLowerCase(),
+
             })
  const createUser=await User.findById(user._id).select("-password -refreshToken")
  console.log(createUser)
@@ -84,6 +91,9 @@ const avatarLocalPath=req.file?.path
    }
    const{accessToken,refreshToken}=await generateAccessAndRefreshToken(user._id)
    const loggedInUser=await User.findById(user._id).select("-password -refreshToken")
+   //send verification email
+ //  await sendEmail({email,type:"VERIFY",userId:loggedInUser._id})
+
       const options={
          httpOnly:true,
          secure:true
@@ -103,13 +113,22 @@ const avatarLocalPath=req.file?.path
    
 
 })
+const verifyEmail=asyncHandler(async(req,res)=>{
+   const {email,userId}=req.body
+   const received=sendEmail({email,userId,type:"VERIFY"})
+   console.log(received)
+   return res.status(200).json(new ApiResponse(200,"Email sent successfully"))
+
+})
 
 const verifyOtp=asyncHandler(async(req,res)=>{
    const {token,userId}=req.body
+   console.log(token)
+   console.log(userId)
    if(!token || !userId){
       throw new ApiError(404,"otp is required to verify")
    }
-   const user=await User.findById(userId).select("-password -refreshToken")
+   const user=await User.findById(userId.toString()).select("-password -refreshToken")
    if(!user){
       throw new ApiError(500,"unable to save user details sign up again")
    }
@@ -121,18 +140,19 @@ const verifyOtp=asyncHandler(async(req,res)=>{
    throw new ApiError(400,"Invalid token")
 
   }
-  else{
-   await User.findByIdAndUpdate(userId
+  console.log(isCorrect)
+ const updated=  await User.findByIdAndUpdate(userId.toString()
       ,{
          $unset:{
-            verifyToken,
-           verifyTokenExpiry
+            verifyToken:1,
+           verifyTokenExpiry:1
             
-         }
+         },
+         isVerified:true
       }
       ,{new:true})
-  }
-  return res.json(200).json(new ApiResponse(200,user,"Verified successfully"))
+  console.log(updated)
+  return res.status(200).json(new ApiResponse(200,updated,"Verified successfully"))
   
 })
 
@@ -505,4 +525,5 @@ export {registerUser,
    getUserChannelProfile,
    getWatchHistory,
 getUserById,
+verifyEmail,
 verifyOtp}

@@ -3,6 +3,7 @@ import { Search } from 'lucide-react'
 import Input from './Input'
 import axios from 'axios'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
 import { useSelector,useDispatch } from 'react-redux'
 import { add, fetch } from '../features/conversations'
 import Conversations from './Conversations.jsx'
@@ -10,11 +11,16 @@ import Nochat from './Nochat'
 import Messagecontainer from './Messagecontainer'
 import { set } from '../features/singleConvo'
 import {nanoid} from "@reduxjs/toolkit";
+import { Menu,UserPlus,CircleCheck ,CircleX  } from 'lucide-react'
+import { useSocket } from '@/context/socketcontext'
  function ChatPage() {
   const [conversations,setConversations]=useState([])
   const [searchInput,setsearchInput]=useState('')
+  const [request,setRequest]=useState('')
   const currentUser=useSelector((state)=>state.auth.userData)
   const dispatch=useDispatch()
+  const {socket}=useSocket()
+  const userId=useSelector((state)=>state.auth.userData._id)
 //look at dispatch one
   const fetchConversations=async()=>{
     try{
@@ -32,12 +38,65 @@ import {nanoid} from "@reduxjs/toolkit";
   }
   const isSelected=useSelector((state)=>state.singleConvo.isSelect)
   console.log(isSelected)
-  
+  const fetchRequests=async()=>{
+    try {
+      const res=await axios.get('http://localhost:4000/api/v1/req/get',{
+        withCredentials:true
+      })
+      if(res.data){
+        setRequest(res.data.data)
+        console.log(res.data.data)
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  }
   
   useEffect(()=>{
     fetchConversations()
+    fetchRequests()
   },[])
 
+  useEffect(()=>{
+    if(socket){
+    socket.on("requestReceived",async(data)=>{
+      const receiver=data.receiver
+      if(receiver===userId){
+        setRequest((prev)=>[...prev,data])
+      }
+    })
+    return ()=>socket.off('requestReceived')}
+  },[socket,userId])
+
+  useEffect(()=>{
+    if(socket){
+      socket.on("reqAccepted",async(data)=>{
+        if(data.receiver===userId){
+          setRequest((prev)=>(prev.filter((d)=>d.sender._id!==data.sender)))
+        }
+      })
+    }
+
+  },[socket,userId])
+  useEffect(()=>{
+    if(socket){
+      socket.on("reqdeclined",async(data)=>{
+        if(data.receiver===userId){
+          setRequest((prev)=>(prev.filter((d)=>d.sender._id!==data.sender)))
+        }
+      })
+      console.log(request)
+    }
+
+  },[socket,userId])
+
+
+  const [showSidebar, setShowSidebar] = useState(false);
+  const Button = ({ children, className, onClick }) => (
+    <button className={`p-2 rounded ${className}`} onClick={onClick}>
+      {children}
+    </button>
+  );
   const handleSearch=async()=>{
     //TODO SHOW ERRROR IF NO USER EXISTS OF SEARCHED NAME
 
@@ -91,6 +150,33 @@ import {nanoid} from "@reduxjs/toolkit";
 
   //const conversations=useSelector((state)=>state.conversations)
   console.log(conversations)
+  
+  const handleAccept=async(id)=>{
+   try {
+     if (!socket.connected) {
+       console.error("Socket not connected");
+       return;
+     }
+     const d={
+       sender:id,
+       receiver:userId
+     }
+     socket.emit("acceptReq",d)
+   } catch (error) {
+    console.log(error)
+   }
+  }
+  const handleReject=async(id)=>{
+    if (!socket.connected) {
+      console.error("Socket not connected");
+      return;
+    }
+    const d={
+      sender:id,
+      receiver:userId
+    }
+    socket.emit("declineReq",d)
+  }
   return (
     
     //  <div>
@@ -112,11 +198,37 @@ import {nanoid} from "@reduxjs/toolkit";
     //     </div> 
 
     
-    <div className="flex justify-center min-h-screen">
-    <div className="w-full max-w-6xl bg-neutral-400 shadow-md border md:grid md:grid-cols-[1fr_2fr] lg:grid-cols-[1fr_3fr]">
-      <div className="hidden md:flex flex-col border-r bg-gray-50">
-        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-          
+    <div className="flex h-screen">
+      <div className={`w-full md:w-1/3 lg:w-1/4 bg-white border-r border-gray-200 flex flex-col ${showSidebar ? 'fixed inset-0 z-50' : 'hidden md:flex'}`}>
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Chats</h2>
+          <Button className="md:hidden" onClick={() => setShowSidebar(false)}>
+            <Menu size={24} />
+          </Button>
+        </div>
+        {/* Friend Requests */}
+        <div className="p-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium mb-2">Friend Requests</h3>
+          {request && request.map((req,index) => (
+            <div key={req._id} className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+              <Avatar>
+             <AvatarImage src={req.sender.avatar} />
+             <AvatarFallback>''</AvatarFallback>
+              </Avatar>
+                <span className="ml-2">{req.sender.username}</span>
+              </div>
+              <Button className="bg-green-500 text-white hover:bg-green-600" onClick={()=>handleAccept(req.sender._id)}>
+                <CircleCheck  size={12} /> Accept
+              </Button>
+              <Button className="bg-red-500 text-white hover:bg-red-600" onClick={()=>handleReject(req.sender._id)}>
+                <CircleX  size={12} />Reject
+              </Button>
+            </div>
+          ))}
+        </div>
+   
+      <div className=" flex-grow overflow-y-auto">
           <input
             type="search"
             placeholder="Search followers..."
@@ -124,14 +236,21 @@ import {nanoid} from "@reduxjs/toolkit";
             value={searchInput}
             onChange={(e)=>setsearchInput(e.target.value)}/>
           <button onClick={handleSearch}><Search/></button>
-        </div>
-        <div className="overflow-y-auto">
+       
+        
           {conversations && conversations.map((chat, index) => (
             <Conversations key={index} participants={chat.participants} lastMsg={chat.lastMsg} createdAt={chat.createdAt} id={chat._id} />
           ))}
         </div>
       </div>
-      <div className="flex flex-col">
+      <div className="flex-1 flex flex-col">
+        {/* Chat Header */}
+        <div className="flex h-16 items-center border-b px-4 bg-white">
+          <Button className="mr-2 md:hidden" onClick={() => setShowSidebar(true)}>
+            <Menu size={24} />
+          </Button>
+
+        </div>
         {!isSelected?(<Nochat/>):(
           
        <Messagecontainer/>
@@ -139,8 +258,7 @@ import {nanoid} from "@reduxjs/toolkit";
         
       </div>
     </div>
-  </div>
-      
+    
    
   )
 }
