@@ -17,31 +17,36 @@ import { Controller } from 'react-hook-form';
             init={
                 {initialValue: defaultValue,
                     height: 500,
-                    menubar: true,
+                    file: { title: 'File', items: 'newdocument | preview ' },
+                    edit: { title: 'Edit', items: ' cut copy paste pastetext | selectall | searchreplace' },
+                   
+                    
+                    format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | styles blocks fontfamily fontsize align lineheight | forecolor backcolor | language | removeformat' },
+                    tools: { title: 'Tools', items: 'wordcount' },
+                   
                     plugins: [
-                        "image",
+                        
                         "advlist",
                         "autolink",
                         "lists",
                         "link",
-                        "image",
+                        
                         "charmap",
                         "preview",
                         "anchor",
                         "searchreplace",
-                        "visualblocks",
+                        
                         "code",
                         "fullscreen",
                         "insertdatetime",
-                        "media",
-                        "table",
+                        
                         "code",
-                        "help",
+                        
                         "wordcount",
                         "anchor",
                     ],
                     toolbar:
-                    "undo redo | blocks | image | bold italic forecolor | alignleft aligncenter bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent |removeformat | help",
+                 "bold italic forecolor | alignleft aligncenter bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent |removeformat | help",
                     content_style: "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }"
                 }}
                 onEditorChange={onChange}

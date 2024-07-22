@@ -1,20 +1,7 @@
 import {
-    Bird,
-    Book,
-    Bot,
     Code2,
-    CornerDownLeft,
-    LifeBuoy,
-    Mic,
-    Paperclip,
-    Rabbit,
     Settings,
-    Settings2,
-    Share,
     SquareTerminal,
-    SquareUser,
-    Triangle,
-    Turtle,
     Home,
     BookCheck,
     BookDashed
@@ -25,7 +12,6 @@ import { useNavigate,useParams } from 'react-router-dom'
 import { useSelector,useDispatch } from 'react-redux'
 import axios from 'axios'
 import { useLocation } from "react-router-dom"
-  import { Badge } from "../ui/badge"
   import { Button } from "../ui/button"
   import {
     Drawer,
@@ -37,21 +23,14 @@ import { useLocation } from "react-router-dom"
   } from "../ui/drawer"
  // import { Input } from "../ui/input"
   import { Label } from "../ui/label"
-   import {
-     Select,
-     SelectContent,
-     SelectItem,
-     SelectTrigger,
-     SelectValue,
-   } from "../ui/select"
-  import { Textarea } from "../ui/textarea"
+  
   import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
     TooltipProvider,
   } from "../ui/tooltip"
-  import Logo from "../Logo"
+  
   import RTE from "../RTE"
   import SelectI from "../SelectI"
   import Input from "../Input"
@@ -60,19 +39,25 @@ import { useLocation } from "react-router-dom"
     const [post,setPost]=useState(null);
     const [error,setError]=useState('')
     const {blogId}=useParams()
+    const [imgPrev,setimgPrev]=useState('')
+    const [newImageSelected, setNewImageSelected] = useState(false);
+const [imageFile, setImageFile] = useState(null);
+    console.log(blogId)
     useEffect(() => {
       if (blogId) {
-        axios.post('http://localhost:4000/api/v1/blog/getPost', { blogId }, {
+        axios.get(`http://localhost:4000/api/v1/blog/view/${blogId}`, {
           withCredentials: true
         })
         .then(response => {
-          setPost(response.data);
+          setPost(response.data.data);
+          console.log(post)
         })
         .catch(err => {
           setError('Blog not found correctly');
         });
       }
     }, [blogId]);
+
     const location=useLocation()
     const { option } = location.state || { option: 'Normal' };
     const {register,handleSubmit,watch,setValue,control,getValues}=useForm(
@@ -93,7 +78,8 @@ import { useLocation } from "react-router-dom"
         setValue('title', post.title);
         setValue('thumbnail', post.thumbnail);
         setValue('description', post.description);
-        setValue('image', post.image);
+        
+        setimgPrev(post.image)
         setValue('status', post.status);
         setValue('category', post.category);
         setValue('media',post.media)
@@ -122,7 +108,7 @@ import { useLocation } from "react-router-dom"
     }
     const edit=async(data)=>{
       try{
-        const res=await axios.patch('http://localhost:4000/api/v1/blog/post',data,{
+        const res=await axios.patch('http://localhost:4000/api/v1/blog/edit',data,{
          withCredentials: true
          
      })
@@ -133,22 +119,41 @@ import { useLocation } from "react-router-dom"
        setError(e.message)
      }
     }
+    const handleImageChange=(e)=>{
+      setValue('image',)
+    }
     const submit=async(data)=>{
       setError('');
-      const formData = new FormData();
+      //const formData = new FormData();
         if(post){
-            data.image[0]?(formData.append('image', data.image[0])):null
-            data.title?(formData.append('title',  data.title)):null
+          // if (newImageSelected && imageFile) {
+          //   // New image provided
+          //   formData.append('image', imageFile);
+          // } else {
+          //   // Keep existing image
+          //   formData.append('image', post.image);
+          // }
+           // data.image[0]?(formData.append('image', data.image[0])):(formData.append('image', post.image))
+         /*   data.title?(formData.append('title',  data.title)):null
             data.thumbnail?(formData.append('thumbnail',  data.thumbnail)):null
             data.description?(formData.append('description',  data.description)):null
             data.status?( formData.append('status',data.status)
           ):null
           data.category?(formData.append('category',data.category)):null
-          data.media?(formData.append('media',data.media[0])):null
-          await  edit(formData)
+          formData.append('_id',blogId)
+        //  data.media?(formData.append('media',data.media[0])):null*/
+        const editData={
+          _id:blogId,
+          title:data.title,
+          thumbnail:data.thumbnail,
+          description: data.description,
+          category:data.category,
+          status:data.status
+        }
+          await  edit(editData)
         }
         else{
-          
+          const formData = new FormData(); 
         formData.append('title', data.title);
         formData.append('thumbnail', data.thumbnail);
         formData.append('description', data.description);
@@ -156,14 +161,14 @@ import { useLocation } from "react-router-dom"
        formData.append('status',data.status);
        data.media?   formData.append('media',data.media[0]):null
         formData.append('image', data.image[0]);  
-        }
+        
         
         for (let [key, value] of formData.entries()) {
           console.log(key, value);
         }
     
       await  create(formData);
-      };
+      };}
         
     const renderMedia=()=>{
       if(option=="Audio" ||option=="Video" ){
@@ -325,17 +330,20 @@ import { useLocation } from "react-router-dom"
                       Featured Image
                     </legend>
                     <div className="grid gap-3">
-                    <Input 
+                    {   !post &&   <Input 
                  label="Image:"
                  placeholder="upload the featured image"
                  type="file"
                  accept="image/png,image/jpg,image/jpeg"
-                 {...register("image",{
-                     required:true
-                 })}
+                 {...register("image")}
                 
-                 />
-                    </div>
+                 />}
+                  {imgPrev && <img src={imgPrev} alt="Current Image" width="100" />}
+</div>
+                 {/* {imgPrev && <img src={imgPrev} alt="Current Image" width="100" />}
+       
+        <Input type="hidden"  value={post?.image || ''} {...register("currimage")}/> */}
+                    
                      {renderMedia()} 
                     
                   </fieldset>
@@ -415,16 +423,17 @@ import { useLocation } from "react-router-dom"
                       Featured Image
                     </legend>
                     <div className="grid gap-3">
-                    <Input 
+                {   !post &&   <Input 
                  label="Image:"
                  placeholder="upload the featured image"
                  type="file"
                  accept="image/png,image/jpg,image/jpeg"
-                 {...register("image",{
-                     required:true
-                 })}
+                 {...register("image")}
                 
-                 />
+                 />}
+                  {imgPrev && <img src={imgPrev} alt="Current Image" width="100" />}
+       
+        {/* <input type="hidden" name="existingImage" value={post?.image || ''} /> */}
                     </div>
                    {renderMedia()} 
                     

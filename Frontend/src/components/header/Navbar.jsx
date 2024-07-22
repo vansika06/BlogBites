@@ -3,6 +3,7 @@ import Logo from "../Logo.jsx";
 import Logoutbtn from "../Logoutbtn.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate,Link } from 'react-router-dom';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -35,6 +36,7 @@ import {
   import { Button } from "@/components/ui/button"
 function Navbar(){
     const authStatus = useSelector((state) => state.auth.status);
+    const user=useSelector((state)=>state.auth.userData)
     const navigate = useNavigate();
    // const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isOpen, setIsOpen] = useState(false)
@@ -123,7 +125,7 @@ const handleClick = () => {
                             </li> }
                 </ul>
                 {authStatus && (
-                           <div className="order-last mx-5">
+                           <div className="flex flex-col gap-6 items-center lg:flex-row lg:gap-8">
                             <TooltipProvider>
                             <Tooltip>
                             <TooltipTrigger>
@@ -136,10 +138,17 @@ const handleClick = () => {
                             </TooltipContent>
                             </Tooltip>
                             </TooltipProvider>
+                           
                                
                             </div>)}
                 { authStatus && (
                 <div className="flex flex-col gap-6 items-center lg:flex-row lg:gap-8">
+                    <Link to='/dashboard'>
+                     <Avatar>
+             <AvatarImage src={user.avatar} />
+             <AvatarFallback>{user.username}</AvatarFallback>
+              </Avatar>
+              </Link>
               <Logoutbtn  />
              </div>)}
              </div>

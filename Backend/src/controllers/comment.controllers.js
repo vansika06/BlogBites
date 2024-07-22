@@ -20,6 +20,21 @@ const addComment=asyncHandler(async(req,res)=>{
     }
     return res.status(200).json(new ApiResponse(200,createComment,"comment added sucessfully"))
 })
+const commentedPosts=asyncHandler(async(req,res)=>{
+    const objectId= new Mongoose.Types.ObjectId(req.user._id);
+    const post=await Comment.find({user:objectId}).populate({
+        path:'blog',
+        populate:{
+            path:'owner',
+            select:'username fullname avatar _id'
+        }
+    }).lean()
+    if(!post){
+        return res.status(200).json(new ApiResponse(200,null,"no posts"))
+    }
+    return res.status(200).json(new ApiResponse(200,post,"posts"))
+})
+
 
 const editComment=asyncHandler(async(req,res)=>{
 
@@ -92,4 +107,4 @@ const getAllComments=asyncHandler(async(req,res)=>{
         return res.status(200).json(new ApiResponse(200,comments,"Allcomments fetched successfully"))
     }
 })
-export {addComment,editComment,deleteComment,getAllComments}
+export {addComment,editComment,deleteComment,getAllComments,commentedPosts}

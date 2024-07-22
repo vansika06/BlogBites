@@ -142,6 +142,7 @@ import likeRouter from  './Routes/like.routes.js'
 import commentRouter from './Routes/comments.routes.js'
 import messageRouter from './Routes/message.routes.js'
 import requestRouter from './Routes/request.routes.js'
+import bookmarkRouter from './Routes/bookmark.routes.js'
 //routes declaration
 
 app.use("/api/v1/users",userRouter)
@@ -151,6 +152,7 @@ app.use("/api/v1/like",likeRouter)
 app.use("/api/v1/comment",commentRouter)
 app.use("/api/v1/message",messageRouter)
 app.use("/api/v1/req",requestRouter)
+app.use("/api/v1/bookmark",bookmarkRouter)
 /*
 app.use((err, req, res, next) => {
     if (err instanceof ApiError) {

@@ -42,18 +42,49 @@ else{
 
 
 const getAllLikedPosts=asyncHandler(async(req,res)=>{
-    const likedPosts=await Like.aggregate([
+    const objectId= new Mongoose.Types.ObjectId(req.user._id);
+   /* const likedPosts=await Like.aggregate([
         {$match:{
-            user:req.user._id.toString()
+            likedBy:objectId
         }},
         {
             $lookup:{
                 from:"blogs",
                 localField:"blog",
                 foreignField:"_id",
-                as:"blogDetails"
+                as:"blogDetails",
+                pipeline:[
+                    {
+                        $lookup:{
+                            from:"users",
+                            localField:"owner",
+                            foreignField:"_id",
+                            as:"ownerDetails",
+                            pipeline:[{
+                                $project:{
+                                    usename:1,
+                                    avatar:1,
+                                    fullname:1
+                                }
+                            }
+
+                            ]
+                        }},
+
+                        {
+                            $addFields:{
+                                ownerDetails:{
+                                    
+                                        $first:"$ownerDetails"
+                                     
+                                }
+                            }
+                        }]
+                       
+                    }
+                
             }
-        },
+        ,
         {
             $addFields:{
                 blogDetails:{
@@ -64,12 +95,16 @@ const getAllLikedPosts=asyncHandler(async(req,res)=>{
             }
         }
     ])
-    console.log(likedPosts)
+    console.log(likedPosts)*/
+    const likedPosts=await Like.find({likedBy:objectId}).populate({path:'blog',populate:{
+        path:'owner',
+        select:'username avatar fullname _id'
+    },}).lean()
     if(likedPosts.length==0){
-        return res.status(200).json(200,null,"No Posts Liked Yet")
+        return res.status(200).json(new ApiResponse(200,null,"No Posts Liked Yet"))
     }
     else{
-        return res.status(200).json(200,likedPosts,"No Posts Liked Yet")
+        return res.status(200).json(new ApiResponse(200,likedPosts," Liked Posts "))
     }
 })
 

@@ -21,7 +21,15 @@ import Test from './components/Test.jsx'
 import Postlayout from './components/Postlayout.jsx'
 import Messagecontainer from './components/Chattest.jsx'
 //import { Header } from './components/index.js'
+import  Dashboard  from './components/Dashboard.jsx'
 
+import UserpostPage from './components/Userpost.jsx'
+import Editimg from './components/Editimg.jsx'
+import EditAvatar from './components/EditAvatar.jsx'
+import Tweet from './components/Tweet.jsx'
+import Drafts from './components/Drafts.jsx'
+import Liked from './components/Liked.jsx'
+import Bookmark from './components/Bookmark.jsx'
 const router=createBrowserRouter([{
   path:'/',
   element:<App/>,
@@ -105,6 +113,62 @@ const router=createBrowserRouter([{
                   <Verification/>
                 //  </Protected>
               ),},
+              {
+                path: "/dashboard",
+                element: (
+                    // <Protected authentication>
+                    //     {" "}
+                    <Dashboard/>
+                  //  </Protected>
+                ),},
+                {
+                  path: "/userposts",
+                  element: (
+                      // <Protected authentication>
+                      //     {" "}
+                      <UserpostPage/>
+                    //  </Protected>
+                  ),},
+                  {
+                    path: "/editImage",
+                    element: (
+                        // <Protected authentication>
+                        //     {" "}
+                        <Editimg/>
+                      //  </Protected>
+                    ),},
+                    {
+                      path: "/editAvatar",
+                      element: (
+                          // <Protected authentication>
+                          //     {" "}
+                          <EditAvatar/>
+                        //  </Protected>
+                      ),},
+                      {
+                        path: "/userDrafts",
+                        element: (
+                            // <Protected authentication>
+                            //     {" "}
+                            <Drafts/>
+                          //  </Protected>
+                        ),},
+                        {
+                          path: "/liked",
+                          element: (
+                              // <Protected authentication>
+                              //     {" "}
+                              <Liked/>
+                            //  </Protected>
+                          ),},
+                          {
+                            path: "/bookmarks",
+                            element: (
+                                // <Protected authentication>
+                                //     {" "}
+                                <Bookmark/>
+                              //  </Protected>
+                            ),},
     ]}])/*
     {
       path:"/all-posts",

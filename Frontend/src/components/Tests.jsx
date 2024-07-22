@@ -1,7 +1,19 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Heart } from 'lucide-react';
+import { Heart,MoreVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from './ui/button';
+import parse from 'html-react-parser';
 function Tests({post}){
   const { image,media,category, title, thumbnail, likes, comments,ownerDetails, description,isLiked ,_id} = post;
   const [like,setLike]=useState(isLiked)
@@ -25,6 +37,11 @@ function Tests({post}){
     }
     
   }
+
+  const handleDelete=async()=>{
+
+  }
+  const userId=useSelector((state)=>state.auth.userData._id)
   return (
     <div className={`bg-white rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 md:flex`}>
       <div className={`relative  md:w-2/3 `}>
@@ -44,7 +61,7 @@ function Tests({post}){
         <h2 className='font-bold mb-2 text-3xl'>{title}</h2>
         {/* <img src={ownerDetails.avatar} className='w-6 h-6 rounded-full'/> */}
         <p className="text-gray-600 mb-4">By {ownerDetails.username}</p>
-        <p className="text-gray-700 mb-4">{`${description.substring(0, 100)}...`}</p>
+        <p className="text-gray-700 mb-4">{`${parse(description)}...`}</p>
         <div className="flex items-center justify-between text-sm text-gray-500">
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
@@ -65,10 +82,58 @@ function Tests({post}){
             Read More
           </button>
           </Link>
+          <span></span>
+          {/* {
+            ownerDetails._id===userId  &&(<>
+            <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="outline" className="h-8 w-8">
+                        <MoreVertical className="h-3.5 w-3.5" />
+                        <span className="sr-only">More</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <div>
+                        <button className='hover:bg-gray-400' onClick={handleDelete} >Delete</button>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>Export</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>Trash</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu></>)
+          } */}
+          
         </div>
       </div>
     </div>
   );
 };
 
-export default Tests;
+export default Tests
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

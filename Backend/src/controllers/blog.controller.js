@@ -54,6 +54,54 @@ const publishPost=asyncHandler(async(req,res)=>{
    )
  
 })
+const Editpost=asyncHandler(async(req,res)=>{
+   const {title,thumbnail,description,category,status,_id}=req.body
+   if([title,thumbnail,description,category,status].some((field)=>(field?.trim()===""))){
+       throw new ApiError(400,"All fields are required")
+
+  }
+  const blog=await Blog.findByIdAndUpdate(_id,{
+      $set:{
+         title,
+         thumbnail,
+         description,
+         category,
+         status
+
+      }
+  },{new:true})
+  if(!blog){
+   throw new ApiError(500,"unable to update blog")
+  }
+  return res.status(200).json(new ApiResponse(200,blog,"blog updated successfully"))
+})
+const editImage=asyncHandler(async(req,res)=>{
+   const {_id}=req.body
+   const imageLocalPath=req.file?.path
+   if(!imageLocalPath){
+      throw new ApiError(400,"file is missing")
+   }
+   const image=await uploadOnCloudinary(imageLocalPath)
+   if(!image.url){
+      throw new ApiError(400,"Error while uploading")
+   }
+   const blog=await Blog.findByIdAndUpdate(_id,
+      {
+        $set:{ image:image.url } 
+      },
+      {
+         new:true
+      }
+   )
+   if(!blog){
+      throw new ApiError(500,"unable to update")
+   }
+   return res.status(200)
+            .json(new ApiResponse(200,blog,"image updated"))
+
+   
+})
+
 const getPostByTitle = asyncHandler(async (req, res) => {
    const { title} = req.params
    if(!(title?.trim())){
@@ -150,7 +198,16 @@ const getPostById=asyncHandler(async(req,res)=>{
              as:"likedBy",
             
           }
-       },{
+       },
+       {
+         $lookup:{
+            from:"bookmarks",
+            localField:'_id',
+            foreignField:"blog",
+            as:"bookmarked"
+         }
+       },
+       {
          $lookup:{
           from:"comments",
           localField:"_id",
@@ -200,7 +257,7 @@ const getPostById=asyncHandler(async(req,res)=>{
                    $size:{$ifNull:["$likedBy",[]]}
                  },
                  comments:{
-                   $size:{$ifNull:["$commentedBy",[]]}
+                   $size:{$ifNull:["$CommentedBy",[]]}
                  },
                 isLiked:{
                   $cond:{
@@ -208,6 +265,13 @@ const getPostById=asyncHandler(async(req,res)=>{
                       then:true,
                       else:false
                    }  
+                },
+                isBookmarked:{
+                  $cond:{
+                     if:{$in:[req.user?._id,{$ifNull:["$bookmarked.user",[]]}]},
+                     then:true,
+                     else:false
+                  }
                 }
                }  
               }
@@ -248,24 +312,26 @@ const getPostByCategory=asyncHandler(async(req,res)=>{
 const updateBlog=asyncHandler(async(req,res)=>{
    const {blogId}=req.body
 })
-const userPosts=asyncHandler(async(req,res)=>{
+const getUserPosts=asyncHandler(async(req,res)=>{
    const userId=req.user._id;
-   const blog=await Blog.find({owner:userId,status:true})
-   if( blog.length==0){
-      return res
-      .status(200)
-      .json(new ApiResponse(200,"You have no blogs"))
+   console.log(userId)
+   const objectId = new Mongoose.Types.ObjectId(userId);
+   const page=parseInt(req.query.p)||0
+      const blogsPerPage=10
+   const blog=await fetchBlog({owner:objectId,status:"active"},null,blogsPerPage*page,blogsPerPage)
+   if(!blog){
+      return res.status(200).json(new ApiResponse(200,null,"no blogs found"))
    }
-   else{
-      return res
-      .status(200)
-      .json(new ApiResponse(200,blog,"Posts fetched successfully"))
-   }
+   return res.status(200).json(new ApiResponse(200,blog,"blogs fetched successully"))
 })
 const userDrafts=asyncHandler(async(req,res)=>{
    const userId=req.user._id;
-   const blog=await Blog.find({owner:userId,status:"inactive"})
-   if( blog.length==0){
+   const page=parseInt(req.query.p)||0
+      const blogsPerPage=10
+      const objectId = new Mongoose.Types.ObjectId(userId);
+      const blog=await Blog.find({owner:objectId,status:"inactive"}).populate({path:'owner',select:'username fullname avatar _id'})
+   //const blog=await fetchBlog({owner:objectId,status:"inactive"},null,blogsPerPage*page,blogsPerPage)
+   if( !blog){
       return res
       .status(200)
       .json(new ApiResponse(200,"You have no drafts"))
@@ -276,6 +342,26 @@ const userDrafts=asyncHandler(async(req,res)=>{
       .json(new ApiResponse(200,blog,"Drafts fetched successfully"))
    } 
 })
+const deletePost=asyncHandler(async(req,res)=>{
+   const {blogId}=req.body
+   const r=await Blog.findByIdAndDelete(blogId)
+   console.log(r)
+   console.log(blogId)
+   if(r){
+      return res
+      .status(200)
+      .json(new ApiResponse(200,null,"post deleted successfully"))
+   }
+   else{
+      throw new ApiError(500,"unable to delete the post ")
+   }
+})
+
+const getLiked=asyncHandler(async(req,res)=>{
+   const userId=req.user._id
+   
+})
+
 const latestBlogs=asyncHandler(async(req,res)=>{
    const page=parseInt(req.query.p)||0
    const blogsPerPage=15
@@ -389,7 +475,7 @@ const getBlogsOfType=asyncHandler(async(req,res)=>{
       
       // .limit(blogsPerPage).skip(blogsPerPage*page)
       var videoBlogs=await fetchBlog({media:{ $ne: null ,
-          $regex: /\.(mp4|avi|mov|wmv|flv)$/i }},null,blogsPerPage*page,blogsPerPage)
+          $regex: /\.(mp4|avi|mov|wmv|flv)$/i },status:"active"},null,blogsPerPage*page,blogsPerPage)
       if(videoBlogs){   
       videoBlogs.forEach((blog)=>
       blog.isLiked=blog.liked.some((id)=>id.toString()===req.user?._id.toString()))}
@@ -407,7 +493,7 @@ const getBlogsOfType=asyncHandler(async(req,res)=>{
          // }).limit(blogsPerPage).skip(blogsPerPage*page)
 
          var audioblogs=await fetchBlog({media:{ $ne: null ,
-            $regex: /\.(mp3|wav|flac|aac|ogg)$/i }},null,blogsPerPage*page,blogsPerPage)
+            $regex: /\.(mp3|wav|flac|aac|ogg)$/i },status:"active"},null,blogsPerPage*page,blogsPerPage)
 
 
             if(audioblogs){   
@@ -541,12 +627,15 @@ export{
     publishPost,
     getAllPost,
     getPostByCategory,
-    userPosts,
+    getUserPosts,
     userDrafts,
     updateBlog,
     getPostById,
     latestBlogs,
     trending,
     getBlogsOfType,
-    similarPosts
+    similarPosts,
+    deletePost,
+    Editpost,
+    editImage
 }

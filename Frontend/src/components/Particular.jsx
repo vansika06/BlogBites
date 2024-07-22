@@ -6,9 +6,11 @@ import Spinner from './Spinner.jsx';
 import { Link } from 'react-router-dom';
 import Comment from './Comment.jsx';
 import toast, { Toaster } from 'react-hot-toast';
+import { Heart } from 'lucide-react';
+import parse from 'html-react-parser';
  function Particular() {
   const {blogId}=useParams()
-  
+  const [like,setLike]=useState('')
   const [blogs,setBlog]=useState('');
  const[blogger,setBlogger]=useState()
  const[cat,setCat]=useState('')
@@ -17,6 +19,9 @@ import toast, { Toaster } from 'react-hot-toast';
  const [inputComment,setinputComment]=useState('')
  const [reqstat,setReqstat]=useState('')
  const [loading,setLoading]=useState(false)
+ const [bookmark,setBookmark]=useState('')
+ const [likecount,setLikecount]=useState('')
+ const [commentCount,setCommentcount]=useState('')
   const f=async()=>{
     try{
       setLoading(true)
@@ -29,6 +34,10 @@ import toast, { Toaster } from 'react-hot-toast';
       setLoading(false)
      const stat=res.data.data.ownerDetails.reqStat?'request sent':'send req'
      setReqstat(stat)
+     setBookmark(res.data.data.isBookmarked)
+     setLike(res.data.data.isLiked)
+     setLikecount(res.data.data.likes)
+     setCommentcount(res.data.data.comments)
       console.log(blogs)
     }}
     catch(e){
@@ -87,7 +96,47 @@ console.log(comments)}
         console.log(category)
       fetchRelated(category)}
     },[blogs])
-      
+
+
+
+     const handleBookmark=async()=>{
+      try{
+        const d={
+          blogId:blogId
+        }
+        const res=await axios.post('http://localhost:4000/api/v1/bookmark/toggle',d,{
+          withCredentials:true
+        })
+        if(res.data.data){
+          console.log("success")
+          setBookmark(true)
+        }
+        else{
+          setBookmark(false)
+        }
+      }
+      catch(e){
+        console.log(e)
+      }
+      }
+      const handleLike=async(e)=>{
+        e.preventDefault()
+        const data={
+          blogId:blogId}
+        const res=await axios.post('http://localhost:4000/api/v1/like/handleLike',data,{
+          withCredentials:true
+        })
+        if(res.data.data){
+          setLike(true)
+          setLikecount((prev)=>prev+1)
+        }
+        else{
+          setLike(false)
+          setLikecount((prev)=>prev-1)
+        }
+        
+      }
+    
  /* const handleclick=async()=>{
    
       try{
@@ -126,6 +175,7 @@ console.log(comments)}
                 padding: '20px', 
               },
         })
+        setCommentcount((prev)=>prev+1)
        /// TODO
        // setComments((prev)=>[...prev,res.data.data])
          setinputComment('')
@@ -238,24 +288,27 @@ console.log(comments)}
 
               {/* Main text content */}
               <div className="prose max-w-none mb-8">
-                <p className="mb-4 text-lg leading-relaxed text-gray-700">{blogs.description}</p>
+                <p className="mb-4 text-lg leading-relaxed text-gray-700">{parse(blogs.description)}</p>
                 {/* Add more paragraphs or content sections as needed */}
               </div>
               
               {/* Engagement metrics */}
               <div className="flex items-center justify-between border-t pt-4 mb-8">
                 <div className="flex items-center space-x-4">
-                  <button className="flex items-center text-red-500 hover:text-red-600 transition">
-                    <span className="mr-2 text-2xl">&#10084;</span>
-                    <span>{blogs.likes} Likes</span>
-                  </button>
-                  <button className="flex items-center text-blue-500 hover:text-blue-600 transition">
-                    <span className="mr-2 text-2xl">&#128172;</span>
-                    <span>{blogs.comments} Comments</span>
-                  </button>
+                <button onClick={handleLike}>
+            <span className='ml-3 flex items-center gap-2 tex'>
+              <Heart fill={like?"red":""} className='text-xl '/>likes {likecount}</span></button> 
+              
+            
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clipRule="evenodd" />
+              </svg>
+              {commentCount}
+            </div>
                 </div>
-                <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full transition">
-                  Share
+                <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full transition" onClick={handleBookmark}>
+                 {bookmark?'Bookmarked':'Bookmark'}
                 </button>
               </div>
             </div>
