@@ -46,8 +46,20 @@ const getRequest=asyncHandler(async(req,res)=>{
         .json(new ApiResponse(200,requests,"requests fetched successfully"))
     }
 })
+const getFollowers=asyncHandler(async(req,res)=>{
+    const followers=await Follow.find({$or:[{blogger:req.user._id},{follower:req.user._id}]}).populate("blogger","_id username avatar fullname").populate("follower","_id username avatar fullname")
+    if(followers.length==0){
+        return res.status(200).json(new ApiResponse(200,null,"no friends yet"))
+    }
+    return res
+    .status(200)
+    .json(new ApiResponse(200,followers,"requests fetched successfully"))
+})
+
+
 
 export{
     getRequest,
-    sendRequest
+    sendRequest,
+    getFollowers
 }

@@ -13,7 +13,9 @@ const addComment=asyncHandler(async(req,res)=>{
     const createComment=await Comment.create({
         blog:blog,
         content:comment,
-        user:req.user?._id
+        user:req.user?req.user._id:req.ngo._id,
+        ownerType:req.user?"user":"ngo"
+
     })
     if(!createComment){
         throw new ApiError(400,"something went wrong while creating the comment")
@@ -45,7 +47,7 @@ const deleteComment=asyncHandler(async(req,res)=>{
     if(!comment){
         throw new ApiError(404,"comment not found")
     }
-    if(comment.user!==req.user._id){
+    if(comment.user!==req.user?req.user._id:req.ngo._id){
         throw new ApiError(400,"Only owner can delete the comment")
     }
     else{
@@ -59,6 +61,7 @@ const deleteComment=asyncHandler(async(req,res)=>{
 
 const getAllComments=asyncHandler(async(req,res)=>{
     const {blogId}=req.params
+    const lookFrom=req.user?"users":"ngos"
     const comments= await Comment.aggregate([
         {
             $match:{
@@ -71,25 +74,25 @@ const getAllComments=asyncHandler(async(req,res)=>{
             }
         },
         {
-            $lookup:{
-                from:"users",
-                localField:"user",
-                foreignField:"_id",
-                as:"commentOwner",
-                pipeline:[
-                    {
-                        $project:{
-                            fullname:1,
-                            username:1,
-                             avatar:1,
-                             email:1,
-
-                        }
-                    }
-                ]
-
-            }
-        },
+            $lookup: {
+              from: lookFrom,
+              foreignField: '_id',
+              localField:"user",
+              as:"commentOwner",
+              pipeline: [
+                {
+                  $project: {
+                    username: 1,
+                    fullname: 1,
+                    avatar: 1,
+                    _id: 1,
+                    name: 1, // For NGO (will be null for users)
+                  },
+                },
+              ],
+            },
+          },
+        
         {
             $addFields:{
                 commentOwner:{

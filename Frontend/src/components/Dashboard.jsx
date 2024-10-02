@@ -10,19 +10,26 @@ import {
   Search,
   ShoppingCart,
   Users,
-  Forward 
+  Forward,
+  UserPlus ,
+  UserCheck,
+  ThumbsUp,
+  MessageSquareQuote,
+  ArrowsUpFromLine,
+  CalendarRange 
   
 } from "lucide-react"
-
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,9 +42,66 @@ import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useSelector } from "react-redux"
 import { Link } from 'react-router-dom'
+import { Button } from "@/components/ui/button"
+import axios from 'axios'
+import { Label } from "@/components/ui/label"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+ 
 function Dashboard() {
     const user=useSelector((state)=>state.auth.userData)
+    const [followers,setFollowers]=useState([])
+    const [channel,setChannel]=useState([])
     console.log(user)
+    const fetchFollowers=async()=>{
+      try {
+        const res=await axios.get("http://localhost:4000/api/v1/req/friend",{
+          withCredentials:true  
+        })
+        if(res.data){
+          setFollowers(res.data.data)
+          console.log(res.data.data)
+        }
+        
+      } catch (error) {
+        console.log(error)
+      }
+    }
+    const fetchChannel=async()=>{
+      try {
+        const res=await axios.get('http://localhost:4000/api/v1/channel/get',{
+          withCredentials:true
+        })
+        if(res.data){
+          setChannel(res.data.data)
+          console.log(res.data.data)
+          console.log(channel)
+        }
+      } catch (error) {
+        console.log(error)
+      }
+    }
+    useEffect(()=>{
+      fetchFollowers()
+      fetchChannel()
+    },[])
+    const users=[]
+  if(followers){
+    for(let i of followers){
+      
+      if(i.blogger._id.toString()===user._id.toString()){
+        users.push({label:{name:i.follower.username,avatar:i.follower.avatar},value:i.follower._id})
+      }
+      else{
+        users.push({label:i.blogger.username,value:i.blogger._id})
+      }
+
+    }
+    console.log(users)
+  }
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -100,24 +164,16 @@ function Dashboard() {
                 <LineChart className="h-4 w-4" />
                Your Bookmarks
               </Link>
+              <Link
+                to='/yourEvents'
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <CalendarRange className="h-4 w-4" />
+               Your Participated Events
+              </Link>
             </nav>
           </div>
-          <div className="mt-auto p-4">
-            <Card x-chunk="dashboard-02-chunk-0">
-              <CardHeader className="p-2 pt-0 md:p-4">
-                <CardTitle>Upgrade to Pro</CardTitle>
-                <CardDescription>
-                  Unlock all features and get unlimited access to our support
-                  team.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-                <Button size="sm" className="w-full">
-                  Upgrade
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          
         </div>
       </div>
       <div className="flex flex-col">
@@ -135,13 +191,7 @@ function Dashboard() {
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
               <nav className="grid gap-2 text-lg font-medium">
-                <Link
-                  href="#"
-                  className="flex items-center gap-2 text-lg font-semibold"
-                >
-                  <Package2 className="h-6 w-6" />
-                  <span className="sr-only">Acme Inc</span>
-                </Link>
+                
                 <Link
                   href="#"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
@@ -150,66 +200,57 @@ function Dashboard() {
                   Dashboard
                 </Link>
                 <Link
-                  href="#"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  Orders
-                  <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                    6
-                  </Badge>
-                </Link>
-                <Link
-                  href="#"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Package className="h-5 w-5" />
-                  Products
-                </Link>
-                <Link
-                  href="#"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Users className="h-5 w-5" />
-                  Customers
-                </Link>
-                <Link
-                  href="#"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <LineChart className="h-5 w-5" />
-                  Analytics
-                </Link>
+                to='/userposts'
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                 <Forward  className="h-4 w-4" />
+                Your Posts
+                <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                  {user.postHistory.length}
+                </Badge>
+              </Link>
+              <Link
+                to='/userDrafts'
+                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
+              >
+                <Package className="h-4 w-4" />
+                Your drafts
+              </Link>
+              <Link
+                to='/editAvatar'
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <Users className="h-4 w-4" />
+                Edit Avatar
+              </Link>
+              
+              <Link
+                to='/liked'
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <LineChart className="h-4 w-4" />
+                Your liked Posts
+              </Link>
+              <Link
+                to='/bookmarks'
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <LineChart className="h-4 w-4" />
+               Your Bookmarks
+              </Link>
+              <Link
+                to='/yourEvents'
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <CalendarRange className="h-4 w-4" />
+               Your Participated Events
+              </Link>
               </nav>
-              <div className="mt-auto">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Upgrade to Pro</CardTitle>
-                    <CardDescription>
-                      Unlock all features and get unlimited access to our
-                      support team.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button size="sm" className="w-full">
-                      Upgrade
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
+              
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            <form>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search products..."
-                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
-                />
-              </div>
-            </form>
+            
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -230,20 +271,113 @@ function Dashboard() {
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           <div className="flex items-center">
-            <h1 className="text-lg font-semibold md:text-2xl">Inventory</h1>
+            <h1 className="text-lg font-semibold md:text-2xl">Activities</h1>
           </div>
           <div
-            className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm" x-chunk="dashboard-02-chunk-1"
+            className="grid lg:grid-cols-3 md:grid-cols-2 gap-4  justify-center rounded-lg border border-dashed shadow-sm" x-chunk="dashboard-02-chunk-1"
           >
-            <div className="flex flex-col items-center gap-1 text-center">
-              <h3 className="text-2xl font-bold tracking-tight">
-                You have no products
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                You can start selling as soon as you add a product.
-              </p>
-              <Button className="mt-4">Add Product</Button>
-            </div>
+             
+              <Popover>
+      <PopoverTrigger asChild>
+        <Card x-chunk="dashboard-05-chunk-1">
+                <CardHeader className="pb-2">
+                  
+                  <CardTitle className="text-4xl"><span><UserPlus /> Friends</span></CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {users && users.length}
+                </CardContent>
+                <CardFooter>
+                  {/* <Progress value={25} aria-label="25% increase" /> */}
+                </CardFooter>
+              </Card>
+      </PopoverTrigger>
+      <PopoverContent className="w-80">
+        
+<ul class="max-w-md divide-y divide-gray-200 dark:divide-gray-700">
+  {users && users.map((user)=>(
+    <li className='pb-3 sm:pb-4 '>
+      <Link>
+      <div class="flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="flex-shrink-0">
+            <img class="w-8 h-8 rounded-full" src={user.label.avatar} alt="Neil image"/>
+         </div>
+      <div class="flex-1 min-w-0">
+            <p class="text-md font-medium text-gray-900  items-center truncate dark:text-white">
+              { user.label.name}
+            </p>
+            
+         </div>
+         </div>
+      </Link>
+    </li>
+  ))}
+   
+  
+  
+   
+  
+</ul>
+
+      </PopoverContent>
+    </Popover>
+              <Card x-chunk="dashboard-05-chunk-2">
+                <CardHeader className="pb-2">
+                  <CardDescription></CardDescription>
+                  <CardTitle className="text-4xl"><span> <UserCheck /><ArrowsUpFromLine />Total Posts</span></CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xs text-muted-foreground">
+                   {user.postHistory.length}
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  {/* <Progress value={12} aria-label="12% increase" /> */}
+                </CardFooter>
+              </Card>
+              <Popover>
+      <PopoverTrigger asChild>
+        <Card x-chunk="dashboard-05-chunk-1">
+                <CardHeader className="pb-2">
+                  
+                  <CardTitle className="text-4xl"><span><Users /> User Channels</span></CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {channel && channel.length}
+                </CardContent>
+                <CardFooter>
+                  {/* <Progress value={25} aria-label="25% increase" /> */}
+                </CardFooter>
+              </Card>
+      </PopoverTrigger>
+      <PopoverContent className="w-80">
+        
+<ul class="max-w-md divide-y divide-gray-200 dark:divide-gray-700">
+  {channel && channel.map((channel)=>(
+    <li className='pb-3 sm:pb-4 '>
+      <Link to='/chat'>
+      <div class="flex items-center space-x-4 rtl:space-x-reverse">
+      
+      <div class="flex-1 min-w-0">
+            <p class="text-md font-medium text-gray-900  items-center truncate dark:text-white">
+              {channel.name}
+            </p>
+            
+         </div>
+         </div>
+      </Link>
+    </li>
+  ))}
+   
+  
+  
+   
+  
+</ul>
+
+      </PopoverContent>
+    </Popover>
+              
           </div>
         </main>
       </div>

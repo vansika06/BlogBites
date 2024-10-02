@@ -4,8 +4,8 @@ import bcrypt from "bcrypt"
 import { asyncHandler } from "./asyncHandler.js";
 import {ApiError} from "./ApiError.js"
 import { ApiResponse } from "./ApiResponse.js";
-
- const sendEmail=async({email,type,userId})=>{
+import {Ngo} from '../models/ngo.models.js'
+ const sendEmail=async({email,type,userId,userType})=>{
   //const {email,type,userId}=req.body
   console.log(email)
   console.log(userId)
@@ -21,11 +21,12 @@ import { ApiResponse } from "./ApiResponse.js";
          pass: "3926c0a9b25c81",
        },
      });
+     if(userType=="USER"){
    const user=await User.findById(userId.toString())
    if(!user){
      throw new ApiError(400,"User not found")
    }
-   const token=(Math.floor(1000+Math.random()*9000)).toString()
+   var token=(Math.floor(1000+Math.random()*9000)).toString()
    
    const hashedOtp=await bcrypt.hash(token,10);
    if(type==="VERIFY"){
@@ -62,6 +63,50 @@ import { ApiResponse } from "./ApiResponse.js";
        throw new ApiError(500,"Something went wrong while generating the otp")
       }
  
+      }}
+      else{
+        const user=await Ngo.findById(userId.toString())
+        if(!user){
+          throw new ApiError(400,"User not found")
+        }
+        var token=(Math.floor(1000+Math.random()*9000)).toString()
+        
+        const hashedOtp=await bcrypt.hash(token,10);
+        if(type==="VERIFY"){
+            const updated=await Ngo.findByIdAndUpdate(
+              userId
+              ,{
+                 $set:{
+                    verifyToken:hashedOtp,
+                    verifyTokenExpiry:Date.now()+3600000
+                   
+                    
+                 }
+              }
+              ,{new:true}
+           ).select("-password -refreshToken")
+           if(!updated){
+            throw new ApiError(500,"Something went wrong while generating the otp")
+           }}
+      
+           else if(type==="FORGET"){
+            const updated=await Ngo.findByIdAndUpdate(
+              userId
+              ,{
+                 $set:{
+                    forgetToken:hashedOtp,
+                    forgetTokenExpiry:Date.now()+3600000
+                   
+                    
+                 }
+              }
+              ,{new:true}
+           ).select("-password -refreshToken")
+           if(!updated){
+            throw new ApiError(500,"Something went wrong while generating the otp")
+           }
+      
+           }
       }
       const mailOptions={
        from:"blogbites@gmail.com",

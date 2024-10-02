@@ -26,6 +26,8 @@ import {
   import { Button } from "@/components/ui/button" 
 function Header() {
     const authStatus = useSelector((state) => state.auth.status);
+    const ngoStatus=useSelector((state)=>state.ngo.status)
+    const fStatus=authStatus||ngoStatus
     const navigate = useNavigate();
    // const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isOpen, setIsOpen] = useState(false)
@@ -48,6 +50,12 @@ const handleMenuToggle = () => {
             url: '/signup',
             active: !authStatus,
         },
+        {
+            name: 'SignUpNgo',
+            url: '/registerNgo',
+            active: !authStatus,
+        },
+
         {
              name: "Posts",
              url: "/main",

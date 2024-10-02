@@ -1,18 +1,27 @@
 import React, { useEffect, useState,useCallback } from 'react';
 import Tests from './Tests';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { UserType } from '@/features/userType.js';
  function Postlayout() {
     const [filter,setFilter]=useState("Trending")
     const cat=[ 'Latest', 'Trending', 'Audios', 'Videos']
     const [blogs,setBlogs]=useState([])
-    useEffect(()=>{
-
-    },[])
+    const [searchedInput,setsearchedInput]=useState('')
+    const navigate=useNavigate()
+    const state = useSelector((state) => state);
+    const {type,data}=UserType(state)
+    console.log(type)
+    console.log(data)
     const fetchBlogs=useCallback(async()=>{
       if(filter==="Audios"){
        try {
          const res=await axios.get('http://localhost:4000/api/v1/blog/audio',{
-       withCredentials:true
+       withCredentials:true,
+       headers: {
+        usertype: type, // or 'ngo' based on the logged-in entity
+      },
        })
        if(res.data){
         setBlogs(res.data.data)
@@ -26,6 +35,10 @@ import axios from 'axios';
         try {
           const res=await axios.get('http://localhost:4000/api/v1/blog/video',{
         withCredentials:true
+        ,
+       headers: {
+        usertype: type, // or 'ngo' based on the logged-in entity
+      },
         })
         if(res.data){
           console.log(res)
@@ -40,6 +53,10 @@ import axios from 'axios';
         try {
           const res=await axios.get('http://localhost:4000/api/v1/blog/latest',{
         withCredentials:true
+        ,
+       headers: {
+        usertype: type, // or 'ngo' based on the logged-in entity
+      },
         })
         if(res.data){
           console.log(res)
@@ -53,6 +70,10 @@ import axios from 'axios';
         try {
           const res=await axios.get('http://localhost:4000/api/v1/blog/trending?q=likes',{
         withCredentials:true
+        ,
+       headers: {
+        usertype: type, // or 'ngo' based on the logged-in entity
+      },
         })
         if(res.data){
           console.log(res)
@@ -64,6 +85,13 @@ import axios from 'axios';
       }
       
       },[filter])
+      const handleSearch=(e)=>{
+        e.preventDefault();
+        if(searchedInput){
+          navigate('/search',{state:{title:searchedInput}})
+        }
+
+      }
    useEffect(()=>{
       fetchBlogs()
       console.log(blogs)
@@ -83,6 +111,18 @@ import axios from 'axios';
         <h1 className="text-5xl font-extrabold text-center mb-10 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
           Trending Topics
         </h1>
+        <form class="max-w-md mx-auto"> 
+        <label for="default-search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>  
+    <div class="relative my-5 max-w-md mx-auto">
+        <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+            <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+            </svg>
+        </div>
+        <input id="default-search"  value={searchedInput} onChange={(e)=>setsearchedInput(e.target.value)} class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Search titles,thumbnails..." required />
+        <button type="submit" class="text-white absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" onClick={handleSearch}>Search</button>
+    </div>
+</form>
         <div className="flex justify-center space-x-4 mb-12">
           {cat.map((type) => (
             <button

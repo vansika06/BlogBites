@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { upload } from "../Middlewares/multer.middleware.js";
 import { verifyJWT } from "../Middlewares/auth.middleware.js";
-import { publishPost,getAllPost,getPostByCategory,getPostById,latestBlogs,trending,getBlogsOfType, similarPosts, getUserPosts, deletePost, Editpost, editImage, userDrafts } from "../controllers/blog.controller.js";
+import { dynamicVerify } from "../Middlewares/dynamic.middleware.js";
+import { publishPost,getAllPost,getPostByCategory,getPostById,latestBlogs,trending,getBlogsOfType, similarPosts, getUserPosts, deletePost, Editpost, editImage, userDrafts, searchBlog } from "../controllers/blog.controller.js";
 const router=Router()
 router.route("/post").post(verifyJWT, upload.fields([
     {
@@ -20,11 +21,12 @@ router.route("/delete").post(verifyJWT,deletePost)
 router.route("/edit").patch(verifyJWT,Editpost)
 router.route("/draft").get(verifyJWT,userDrafts)
 router.route("/editImage").patch(verifyJWT,upload.single("image"),editImage)
-router.route("/cat/:category").get(verifyJWT,getPostByCategory)
-router.route("/view/:blogId").get(verifyJWT,getPostById)
-router.route("/latest").get(verifyJWT,latestBlogs)
-router.route("/trending").get(verifyJWT,trending)
-router.route("/:type").get(verifyJWT,getBlogsOfType)
+router.route("/search").post(dynamicVerify,searchBlog)
+router.route("/cat/:category").get(dynamicVerify,getPostByCategory)
+router.route("/view/:blogId").get(dynamicVerify,getPostById)
+router.route("/latest").get(dynamicVerify,latestBlogs)
+router.route("/trending").get(dynamicVerify,trending)
+router.route("/:type").get(dynamicVerify,getBlogsOfType)
 
 
 //router.route("/login").post(loginUser)

@@ -1,5 +1,12 @@
 import {Blog} from '../models/Blog.models.js'
-
+const getOwnerType = (req) => {
+   if (req.user) {
+     return { ownerType: 'user', ownerId: req.user._id };
+   } else if (req.ngo) {
+     return { ownerType: 'ngo', ownerId: req.ngo._id };
+   }
+   throw new Error("Unauthorized");
+ };
 const fetchBlog=async(matchcondition,sortcondition,skip,limit)=>{
     sortcondition=sortcondition||{createdAt:-1}
     console.log(skip)

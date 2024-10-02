@@ -2,11 +2,14 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import {User} from "../models/user.models.js"
+import {Blog} from "../models/Blog.models.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { sendEmail } from "../utils/email.js";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import mongoose, { Mongoose } from "mongoose";
+import { fetchBlog } from "../utils/blog.js";
+import { Ngo } from "../models/ngo.models.js";
 const generateAccessAndRefreshToken=async(userId)=>{///jb pswd wgerah validate ho ja rha h tb yeh kr rhe isliye user obj jo banaye h usse asani se id nikal kr pass kr skte
       try{
          const user=await User.findById(userId)
@@ -114,20 +117,21 @@ const avatarLocalPath=req.file?.path
 
 })
 const verifyEmail=asyncHandler(async(req,res)=>{
-   const {email,userId}=req.body
-   const received=sendEmail({email,userId,type:"VERIFY"})
+   const {email,userId,userType}=req.body
+   const received=sendEmail({email,userId,type:"VERIFY",userType})
    console.log(received)
    return res.status(200).json(new ApiResponse(200,"Email sent successfully"))
 
 })
 
 const verifyOtp=asyncHandler(async(req,res)=>{
-   const {token,userId}=req.body
+   const {token,userId,userType}=req.body
    console.log(token)
    console.log(userId)
    if(!token || !userId){
       throw new ApiError(404,"otp is required to verify")
    }
+   if(userType==="USER"){
    const user=await User.findById(userId.toString()).select("-password -refreshToken")
    if(!user){
       throw new ApiError(500,"unable to save user details sign up again")
@@ -141,7 +145,7 @@ const verifyOtp=asyncHandler(async(req,res)=>{
 
   }
   console.log(isCorrect)
- const updated=  await User.findByIdAndUpdate(userId.toString()
+ var updated=  await User.findByIdAndUpdate(userId.toString()
       ,{
          $unset:{
             verifyToken:1,
@@ -150,7 +154,32 @@ const verifyOtp=asyncHandler(async(req,res)=>{
          },
          isVerified:true
       }
-      ,{new:true})
+      ,{new:true})}
+      else{
+         const user=await Ngo.findById(userId.toString()).select("-password -refreshToken")
+         if(!user){
+            throw new ApiError(500,"unable to save user details sign up again")
+         }
+         if(user.verifyTokenExpiry<Date.now()){
+            throw new ApiError(400,"Token Expired.Please request again")
+         }
+         const isCorrect= await  bcrypt.compare(token,user.verifyToken)
+        if(!isCorrect){
+         throw new ApiError(400,"Invalid token")
+      
+        }
+        console.log(isCorrect)
+       var updated=  await Ngo.findByIdAndUpdate(userId.toString()
+            ,{
+               $unset:{
+                  verifyToken:1,
+                 verifyTokenExpiry:1
+                  
+               },
+               isVerified:true
+            }
+            ,{new:true})
+      }
   console.log(updated)
   return res.status(200).json(new ApiResponse(200,updated,"Verified successfully"))
   
@@ -202,7 +231,8 @@ const loginUser=asyncHandler(async(req,res)=>{
 
 
 const logOutUser=asyncHandler(async(req,res)=>{
-         User.findByIdAndUpdate(req.user._id,{
+   console.log(req.user._id)
+         await User.findByIdAndUpdate(req.user._id,{
             $unset:{
                refreshToken:1//this removes the field from doc
             }
@@ -301,7 +331,23 @@ const getUserById=asyncHandler(async(req,res)=>{
    return res.status(200).json(new ApiResponse(200,user,"fetched successfully"))
 
 })
-
+const getParticularuser=asyncHandler(async(req,res)=>{
+   const {userId}=req.params
+   console.log(userId)
+   console.log("hi")
+   if(!(userId?.trim())){
+      throw new ApiError(400,"userid is missing")
+   }
+   const user=await User.findById(userId)
+   const page=0;
+   const blogsPerPage=10 
+   const postDetails=await fetchBlog({_id: { $in: user.postHistory }},null,blogsPerPage*page,blogsPerPage)
+  console.log(user)
+if(!postDetails){
+   throw new ApiError(400,"invalid id")
+}
+return res.status(200).json(new ApiResponse(200,postDetails,"fetched successfully"))
+})
 
 const updateAccountDetails=asyncHandler(async(req,res)=>{
    //jo jo allowed h update krne k liye
@@ -374,54 +420,24 @@ const updateCoverImage=asyncHandler(async(req,res)=>{
 const getUserChannelProfile=asyncHandler(async(req,res)=>{
    const {username}=req.params
    if(!(username?.trim())){
-      throw new ApiError(400,"username is missing")
+      throw new ApiError(400,"userid is missing")
    }
+   //const user=await User.findById(userId)
+   //user.postHistory.forEach((p)=>populate('p'))
    const channel=await User.aggregate([
       {
          $match:{
-            username:username?.toLowerCase()
+            username:username.toLowerCase()
          }
       },
-      {
-         $lookup:{
-            from:"followers",//hmlog Subscription aise save the models banate hue vo db m subscriptions
-            localField:"_id",
-            foreignField:"blogger",
-            as:"followers"
-         }
-      },
-      {
-         $lookup:{
-            from:"followers",//hmlog Subscription aise save the models banate hue vo db m subscriptions
-            localField:"_id",
-            foreignField:"follower",
-            as:"following"
-         }
-      },
-      {
-         $addFields:{
-            followersCount:{
-               $size:"$followers"
-            },
-            follwingCount:{
-               $size:"$following"
-            },
-            isFollowing:{
-               $cond:{
-                  if:{$in:[req.user?._id,"$followers.follower"]},
-                  then:true,
-                  else:false
-               }  
-            }
-         }
-      },
+     
+     
+      
       {
          $project:{
             fullname:1,
             username:1,
-            followersCount:1,
-            follwingCount:1,
-            isFollowing:1,
+            
             avatar:1,
             _id:1,
             email:1
@@ -526,4 +542,5 @@ export {registerUser,
    getWatchHistory,
 getUserById,
 verifyEmail,
-verifyOtp}
+verifyOtp,
+getParticularuser,generateAccessAndRefreshToken}

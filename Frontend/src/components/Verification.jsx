@@ -4,6 +4,7 @@ import { useNavigate,Link } from 'react-router-dom'
 import { useDispatch,useSelector } from 'react-redux'
 import {login as log} from "../features/authslice.js"
 import { isVerified } from '../features/authslice.js'
+import { isVerified as isNgoVerified } from '../features/ngo.js'
 import Animation from './Animation/Animation.jsx'
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp"
  import axios from 'axios'
@@ -16,7 +17,11 @@ import { Button } from './ui/button.jsx'
 import toast, { Toaster } from 'react-hot-toast';
  
 function Verification() {
-    const user=useSelector((state)=>state.auth.userData)
+    let user=useSelector((state)=>state.auth.userData)
+    if(!user ||user &&!user.username){
+       user=useSelector((state)=>state.ngo.ngoData)
+       console.log(user)
+    }
     console.log(user)
     const navigate=useNavigate()
     const [otp,setOtp]=useState(['','','',''])
@@ -24,7 +29,8 @@ function Verification() {
     const [emailsent,setEmailsent]=useState(false)
     const emaildata={
         email:user.email,
-        userId:user._id
+        userId:user._id,
+        userType:user.username?"USER":"NGO"
     }
     const dispatch=useDispatch()
     
@@ -40,6 +46,7 @@ function Verification() {
     }
     const sendEmail=async()=>{
         try {
+          if(user.username){}
             const res=await axios.post('http://localhost:4000/api/v1/users/sendmail',emaildata,{
                 withCredentials: true})
                 //console.log(res)
@@ -82,7 +89,8 @@ function Verification() {
         console.log(finalOtp)
         const data={
           token:value,
-          userId:user._id
+          userId:user._id,
+          userType:user.username?"USER":"NGO"
         }
         console.log(data)
         const res=await axios.post('http://localhost:4000/api/v1/users/verify',data,{
@@ -90,7 +98,7 @@ function Verification() {
                   console.log(res)
                   if(res.data.success){
                     console.log(res)
-                    dispatch(isVerified())
+                    dispatch(isNgoVerified())
                    // console.log(useSelector((state)=>state.auth.status))
                     toast.success("User verified successfully",{
                       position:'top-right',

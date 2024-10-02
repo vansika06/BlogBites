@@ -3,29 +3,31 @@ import axios from 'axios';
 import { Heart,MoreVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Button } from './ui/button';
+import { UserType } from '@/features/userType';
 import parse from 'html-react-parser';
 function Tests({post}){
   const { image,media,category, title, thumbnail, likes, comments,ownerDetails, description,isLiked ,_id} = post;
   const [like,setLike]=useState(isLiked)
   const [likecount,setLikecount]=useState(likes)
+  const state = useSelector((state) => state);
+    const {type,data}=UserType(state)
+    console.log(type)
+    console.log(data)
+  //const [parsed,setParsed]=useState('')
   const blogId=_id
+ // const str=parse(description)
+  //const newstr=str.substring(0,50)
+ // setParsed(str)
+ // console.log(str)
   const handleLike=async(e)=>{
     e.preventDefault()
     const data={
       blogId:_id
     }
     const res=await axios.post('http://localhost:4000/api/v1/like/handleLike',data,{
-      withCredentials:true
+      withCredentials:true,headers: {
+        usertype: type, // or 'ngo' based on the logged-in entity
+      },
     })
     if(res.data.data){
       setLike(true)
@@ -37,11 +39,11 @@ function Tests({post}){
     }
     
   }
-
+  console.log(parse(description))
   const handleDelete=async()=>{
 
   }
-  const userId=useSelector((state)=>state.auth.userData._id)
+  //const userId=useSelector((state)=>state.auth.userData._id)
   return (
     <div className={`bg-white rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 md:flex`}>
       <div className={`relative  md:w-2/3 `}>
@@ -61,7 +63,7 @@ function Tests({post}){
         <h2 className='font-bold mb-2 text-3xl'>{title}</h2>
         {/* <img src={ownerDetails.avatar} className='w-6 h-6 rounded-full'/> */}
         <p className="text-gray-600 mb-4">By {ownerDetails.username}</p>
-        <p className="text-gray-700 mb-4">{`${parse(description)}...`}</p>
+        <p className="text-gray-700 mb-4">{parse(description)}</p>
         <div className="flex items-center justify-between text-sm text-gray-500">
           <div className="flex items-center space-x-4">
             <div className="flex items-center">

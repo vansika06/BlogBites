@@ -3,13 +3,20 @@ import  { useEffect, useState } from 'react'
 import axios from 'axios'
 import Blogitem from './Blogitem';
 import { useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { UserType } from '@/features/userType';
  function CatPosts() {
     const [Data,setData]=useState([]);
     const location=useLocation()
     const {category}=location.state||{category:"General"}
+    const state=useSelector((state)=>state)
+    const {type,data}=UserType(state)
     useEffect(()=>{
          axios.get(`http://localhost:4000/api/v1/blog/cat/${category}`,{
-            withCredentials: true
+            withCredentials: true,
+            headers:{
+              usertype: type, // or 'ngo' based on the logged-in entity
+            },
             
         })
         .then((res)=>{

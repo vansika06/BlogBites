@@ -1,4 +1,4 @@
-import React,{useState} from "react";
+import React,{useEffect, useState} from "react";
 import Logo from "../Logo.jsx";
 import Logoutbtn from "../Logoutbtn.jsx";
 import { useDispatch, useSelector } from "react-redux";
@@ -20,7 +20,7 @@ import {
     SelectValue,
   } from "../ui/select.jsx"
   
-  import { MessageSquareText ,Menu} from 'lucide-react';
+  import { MessageSquareText ,Menu,Bell} from 'lucide-react';
   import {
     Tooltip,
     TooltipContent,
@@ -37,6 +37,18 @@ import {
 function Navbar(){
     const authStatus = useSelector((state) => state.auth.status);
     const user=useSelector((state)=>state.auth.userData)
+    const ngo=useSelector((state)=>state.ngo.ngoData)
+    //console.log(ngo.avatar)
+    console.log(user)
+    const ngoStatus=useSelector((state)=>state.ngo.status)
+    const fStatus=ngoStatus||authStatus
+    const [notifications,setNotifications]=useState([])
+    console.log(fStatus)
+    console.log(ngoStatus)
+    console.log(authStatus)
+    useEffect(()=>{
+        
+    },[])
     const navigate = useNavigate();
    // const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isOpen, setIsOpen] = useState(false)
@@ -53,17 +65,27 @@ const handleClick = () => {
         {
             name: 'Login',
             url: '/login',
-            active: !authStatus,
+            active: !fStatus,
         },
+        {
+          name: 'LoginNgo',
+          url: '/loginNgo',
+          active: !fStatus,
+      },
         {
             name: 'SignUp',
             url: '/signup',
-            active: !authStatus,
+            active: !fStatus,
         },
+        {
+          name: 'SignUpNgo',
+          url: '/registerNgo',
+          active: !fStatus,
+      },
         {
              name: "Posts",
              url: "/main",
-             active: authStatus
+             active: fStatus
          },
         
     ];
@@ -92,7 +114,7 @@ const handleClick = () => {
                                         </button>
                                     </li>
                 ))}
-                 {authStatus &&
+                 {fStatus &&
                                  <li key="allPosts">
                                  <Select onValueChange={handleCategoryChange}>
                          <SelectTrigger className="w-[100px] hover:bg-gray-700 hover:text-white border-none hover:border-none font-medium ">
@@ -123,8 +145,15 @@ const handleClick = () => {
                         </SelectContent>
                         </Select> 
                             </li> }
+                 {ngoStatus && <li
+                  key="addEvent" className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+                                        <button type="button" onClick={() => navigate('/addEvent')}>
+                                           AddEvent
+                                        </button>
+                                   
+                  </li>}           
                 </ul>
-                {authStatus && (
+                {fStatus && (
                            <div className="flex flex-col gap-6 items-center lg:flex-row lg:gap-8">
                             <TooltipProvider>
                             <Tooltip>
@@ -141,16 +170,47 @@ const handleClick = () => {
                            
                                
                             </div>)}
-                { authStatus && (
+               { fStatus && (
                 <div className="flex flex-col gap-6 items-center lg:flex-row lg:gap-8">
-                    <Link to='/dashboard'>
+                      {/*<DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="outline" className="h-8 w-8" >
+                      <Bell color="white" size={32}/>
+                        <span className="sr-only">Notifications</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <div className='hover:bg-gray-400'>
+                        <button className='hover:bg-gray-400' onClick={()=>handleDelete(p._id)} >Delete</button>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                      <div className='hover:bg-gray-400'>
+                        <button className='hover:bg-gray-400' onClick={()=>handleEdit(p._id)} >Edit</button>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                      <div className='hover:bg-gray-400'>
+                        <button className='hover:bg-gray-400' onClick={()=>handleEditImage(p._id,p.image)} >Edit Featured image</button>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                    */}
+                     <Link to='/dashboard'>
                      <Avatar>
-             <AvatarImage src={user.avatar} />
-             <AvatarFallback>{user.username}</AvatarFallback>
+             <AvatarImage src={`${user && user.avatar?user.avatar:ngo.avatar}`} />
+             <AvatarFallback>{`${user && user.username?user.username:ngo.name}`}</AvatarFallback>
               </Avatar>
-              </Link>
+              </Link> 
               <Logoutbtn  />
              </div>)}
+             
              </div>
              
              <div className="lg:hidden">

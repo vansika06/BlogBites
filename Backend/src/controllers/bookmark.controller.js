@@ -10,10 +10,10 @@ const toggleBookmark=asyncHandler(async(req,res)=>{
     //if(!isValidObjectId(blogger)){
     ///    throw new ApiError(404,"Invalid object id")
     //}
-    const isMarked=await Bookmark.findOne({user:req.user._id,blog:blogId})
+    const isMarked=await Bookmark.findOne({user:req.user?req.user._id:req.ngo._id,blog:blogId})
     
     if(!isMarked){
-        const mark=await Bookmark.create({user:req.user._id,blog:blogId})
+        const mark=await Bookmark.create({user:req.user?req.user._id:req.ngo._id,blog:blogId})
     if(!mark){
         throw new ApiError(500,"something went wrong while marking ")
     }
@@ -28,7 +28,7 @@ const toggleBookmark=asyncHandler(async(req,res)=>{
    // console.log(populatedFollow)
 } 
 else{
-    const unmark=await Like.findByIdAndDelete(isMarked._id)
+    const unmark=await Bookmark.findByIdAndDelete(isMarked._id)
     if(!unmark){
         throw new ApiError(500,"something went wrong while unmarking")
     }
@@ -38,16 +38,16 @@ else{
 }
 })
 const getAllbookmarks=asyncHandler(async(req,res)=>{
-    const objectId= new Mongoose.Types.ObjectId(req.user._id);
+    const objectId= new Mongoose.Types.ObjectId(req.user._id||req.ngo._id);
     const markedPosts=await Bookmark.find({user:objectId}).populate({path:'blog',populate:{
         path:'owner',
         select:'username avatar fullname _id'
     },}).lean()
     if(markedPosts.length==0){
-        return res.status(200).json(new ApiResponse(200,null,"No Posts Liked Yet"))
+        return res.status(200).json(new ApiResponse(200,null,"No Posts Bookmarked Yet"))
     }
     else{
-        return res.status(200).json(new ApiResponse(200,markedPosts," Liked Posts "))
+        return res.status(200).json(new ApiResponse(200,markedPosts," Bookmarked Posts "))
     }
 })
 export {toggleBookmark,getAllbookmarks}

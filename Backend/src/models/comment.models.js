@@ -13,6 +13,10 @@ const commentSchema=new Schema({
         type:mongoose.Schema.Types.ObjectId,
         ref:"User",
         required:true
+    },
+    ownerType:{
+        type:String,
+        required:true
     }
     
 },{timestamps:true})

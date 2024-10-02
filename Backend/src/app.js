@@ -105,7 +105,12 @@ io.on("connection",(socket)=>{
             console.log(error)
         }
     })
+    socket.on("joinEventGrp",(data)=>{
+        socket.join(data.groupId)
+        console.log("Joined to room",data.groupId)
+        io.to(data.groupId).emit('newVolunteer', data.userId );
 
+    })
     socket.on("disconnect",()=>{
         console.log("user disconnected",socket.id)
         for (const key in onlineUsers) {
@@ -143,6 +148,8 @@ import commentRouter from './Routes/comments.routes.js'
 import messageRouter from './Routes/message.routes.js'
 import requestRouter from './Routes/request.routes.js'
 import bookmarkRouter from './Routes/bookmark.routes.js'
+import channelRouter from './Routes/channel.routes.js'
+import ngoRouter from './Routes/ngo.routes.js'
 //routes declaration
 
 app.use("/api/v1/users",userRouter)
@@ -153,6 +160,8 @@ app.use("/api/v1/comment",commentRouter)
 app.use("/api/v1/message",messageRouter)
 app.use("/api/v1/req",requestRouter)
 app.use("/api/v1/bookmark",bookmarkRouter)
+app.use("/api/v1/channel",channelRouter)
+app.use("/api/v1/ngo",ngoRouter)
 /*
 app.use((err, req, res, next) => {
     if (err instanceof ApiError) {

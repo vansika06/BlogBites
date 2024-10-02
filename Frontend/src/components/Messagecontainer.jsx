@@ -6,6 +6,7 @@ import axios from 'axios'
 import Button from './Button'
 import { useSocket } from '@/context/socketcontext';
 import { CheckCheck,FileImage ,Paperclip} from 'lucide-react';
+import { setNotification } from '@/features/singleConvo';
 import {
   Dialog,
   DialogContent,
@@ -16,13 +17,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import Spinner from './Spinner';
+import { setConversation } from '@/features/conversations';
 //------------------------------------
 //TODO WHEN SENDING OR RECEIVING MSG SET THE LAST MSG ALSO IN THE SIDEBAR
 //TODO online status
  function Messagecontainer() {
    const data=useSelector((state)=>state.singleConvo.particular)
-   
+   if(!data){
+    var groupData=useSelector((state)=>state.singleConvo.particularGroup)
+   }
+   const dispatch=useDispatch()
    const [messages,setMessages]=useState([])
+   const conv=useSelector((state)=>state.conver.conversations)
   // const [updated,setUpdatedMessages]=useState(messages)
    const [inputMsg,setinputMsg]=useState('')
    const [image,setImage]=useState('')
@@ -73,10 +79,13 @@ import Spinner from './Spinner';
 
 
   useEffect(()=>{
-    if(messages.length>0){
+    
+    if(messages && messages.length>0){
+      console.log(messages)
       console.log(messages[messages.length-1])
+      console.log(messages.length-1)
       var sentByOther=messages[messages.length-1].sentBy!==userId
-      console.log(sentByOther)}
+      console.log(sentByOther)
    //pass selectedconversation id  and  other userid so that uss user ko bta ske isne msg dekh liya
    if(sentByOther){
     console.log(data.conId)
@@ -84,7 +93,7 @@ import Spinner from './Spinner';
     socket.emit("MarkAsSeen",{conversationId:data.conId,
       otherUserId:data.secUser._id
      })
-   }
+   }}
    
    
   },[messages,socket,userId,data.conId,data.secUser._id])
@@ -124,12 +133,14 @@ import Spinner from './Spinner';
       if(msg.conversationId===data.conId){
         setMessages((messages)=>[...messages,msg])
       }
-      
+      else{
+        dispatch(setNotification(msg))
+      }
      })
      //since we dont want this when unmounts
      return ()=>socket.off('newMessage')
 
-   },[socket])
+   },[messages,socket,userId,data.conId,data.secUser._id])
 
   
 const handleClick=async()=>{
@@ -158,6 +169,14 @@ const handleClick=async()=>{
               setMessages([res.data.data])
             }
             console.log(messages)
+           dispatch( setConversation({lastMsg:{
+              sender:res.data.data.sentBy,
+              message:inputMsg
+            },
+          id:data.conId}))
+          //const conv=useSelector((state)=>state.conversations.conversations)
+          console.log("yes")
+          console.log(conv)
              setinputMsg('')
              setImage('')
              setLoading(false)
@@ -290,8 +309,8 @@ useEffect(()=>{
 
   <div className="flex h-screen bg-gray-200">
     
-
-    {/* Chat Container */}
+  {data && (
+   
     <div className="flex-1 flex flex-col  bg-gray-200">
       {/* Chat Header */}
       <div className="flex h-16 items-center border-b px-4 bg-white">
@@ -374,7 +393,93 @@ useEffect(()=>{
 
  </div>
     </div>
+  )}
+{
+    groupData && (
+      <div className="flex-1 flex flex-col  bg-gray-200">
+      {/* Chat Header */}
+      <div className="flex h-16 items-center border-b px-4 bg-white">
+        <h1 className="text-xl font-semibold">{`Chat with ${groupData.name}`}</h1>
+      </div>
 
+      {/* Chat Messages */}
+      <div className="flex-grow p-4 overflow-y-auto bg-gray-200">
+        <div className=" flex flex-col space-y-2 ">
+          {messages && messages.map((msg, index) => (
+            <div key={index} className={`flex px-4 py-2 ${msg.sentBy === userId ? 'justify-end' : 'justify-start'} w-full`}>
+              <div 
+                className={`max-w-[70%] break-words ${
+                  msg.sentBy === userId ? 'bg-blue-600 text-white ml-auto' : 'bg-white mr-auto'
+                } p-3 rounded-lg shadow`}
+                ref={messages.length - 1 === index ? messageEndRef : null}
+              >
+                {msg.message && (
+                  <p className="flex items-center break-words">
+                    {msg.message}
+                    {msg.sentBy === userId && (
+                      <CheckCheck size={16} className={`ml-2 ${msg.seen ? 'text-green-400' : 'text-gray-300'}`} />
+                    )}
+                  </p>
+                )}
+                {msg.image && (
+                  <div className="relative">
+                    <img src={msg.image} alt="Shared" className="rounded-lg max-w-full h-auto object-cover" style={{ maxHeight: '200px', width: 'auto' }} />
+                    {msg.sentBy === userId && (
+                      <CheckCheck size={16} className={`absolute bottom-2 right-2 ${msg.seen ? 'text-green-400' : 'text-white'}`} />
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Input Area */}
+      {/* <div className="border-t p-4 bg-white">
+        <div className="flex items-center space-x-2">
+          <input
+            type="text"
+            placeholder="Type a message..."
+            value={inputMsg}
+            className="flex-grow appearance-none bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) => setInputMsg(e.target.value)}
+          />
+          <button>
+              <Paperclip size={20} />
+            </button>
+            <button className=" text-white rounded-full bg-blue-600 mr-1">
+              <Send size={20} />
+            </button>
+          <input type="file" hidden ref={imageRef} onChange={handleImage} />
+        </div>
+      </div> */}
+         <div className="border-t p-4 flex items-center">
+<div className="relative flex items-center w-full">
+    
+     <input
+       type="text"
+       placeholder="Type a message..."
+       value={inputMsg}
+       className="w-full appearance-none bg-gray-100 border border-gray-300 rounded-lg pl-4 pr-10 py-2 shadow-none"
+       onChange={(e) => setinputMsg(e.target.value)}
+     />
+     <button 
+       onClick={handleClick}
+       className="absolute right-2 top-1/2 transform -translate-y-1/2"
+     >
+       <Send fill='blue' size={24}/>
+     </button>
+    
+   </div>
+   <FileImage fill="white" className="h-6 w-10 ml-2 cursor-pointer" onClick={()=>imageRef.current.click()}/>
+
+   <input type='file' hidden ref={imageRef} onChange={handleImage}/>
+
+ </div>
+    </div>
+    )
+  }
     {/* Image Preview Dialog */}
     <Dialog open={image} onOpenChange={onclose}>
       <DialogContent className="sm:max-w-[425px]">

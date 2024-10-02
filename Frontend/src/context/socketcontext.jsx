@@ -6,21 +6,24 @@ export const useSocket=()=>{
     return useContext(socketContext)
 }
 export const SocketContextProvider=({children})=>{
-    const user=useSelector((state)=>state.auth.userData)
-    console.log(user)
+    const authUser = useSelector((state) => state.auth.userData);
+  const ngoUser = useSelector((state) => state.ngo.ngoData);
+
+  const user = authUser?.username ? authUser : ngoUser;
+  console.log(user)
     const [socket,setSocket]=useState(null);
     const [onlineUsers,setOnline]=useState([])
     useEffect(()=>{
-        const socket=io("http://localhost:4000",{
+        const newSocket=io("http://localhost:4000",{
             query:{userId:user?._id}
         })
-        setSocket(socket)
-        socket.on("online",(users)=>{
+        setSocket(newSocket)
+        newSocket.on("online",(users)=>{
             setOnline(users)
             console.log(onlineUsers)
         })
         //return will run each time on dependency change each time the component unmounts
-        return ()=>socket && socket.close()
+        return ()=>newSocket && newSocket.close()
     },[user?._id])
     
    

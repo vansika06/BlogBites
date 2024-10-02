@@ -8,8 +8,13 @@ import Comment from './Comment.jsx';
 import toast, { Toaster } from 'react-hot-toast';
 import { Heart } from 'lucide-react';
 import parse from 'html-react-parser';
+
+import { UserType } from '@/features/userType';
  function Particular() {
   const {blogId}=useParams()
+  const state = useSelector((state) => state);
+  const {type,data}=UserType(state)
+  console.log(type)
   const [like,setLike]=useState('')
   const [blogs,setBlog]=useState('');
  const[blogger,setBlogger]=useState()
@@ -22,15 +27,20 @@ import parse from 'html-react-parser';
  const [bookmark,setBookmark]=useState('')
  const [likecount,setLikecount]=useState('')
  const [commentCount,setCommentcount]=useState('')
+ 
+ //console.log(utype)
   const f=async()=>{
     try{
       setLoading(true)
     const res= await axios.get(`http://localhost:4000/api/v1/blog/view/${blogId}`,{
-      withCredentials:true
+      withCredentials:true,
+      headers: {
+        usertype: type, // or 'ngo' based on the logged-in entity
+      },
       })
     if(res.data){
       setBlog(res.data.data)
-      setComments(res.data.data.CommentedBy)
+    //  setComments(res.data.data.CommentedBy)
       setLoading(false)
      const stat=res.data.data.ownerDetails.reqStat?'request sent':'send req'
      setReqstat(stat)
@@ -39,19 +49,35 @@ import parse from 'html-react-parser';
      setLikecount(res.data.data.likes)
      setCommentcount(res.data.data.comments)
       console.log(blogs)
+     // console.log(comments)
     }}
     catch(e){
       console.log(e)
     }
   }
-  
+  const fetchComments=async()=>{
+    try {
+      const res=await axios.get(`http://localhost:4000/api/v1/comment/allComments/${blogId}`,{
+      withCredentials:true,
+      headers: {
+        usertype: type, // or 'ngo' based on the logged-in entity
+      },
+      })
+      if(res.data){
+        setComments(res.data.data)
+        console.log(res.data.data)
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  }
   useEffect(()=>{
    f();
-    
+    fetchComments()
   },[blogId])
-  const userId=useSelector((state)=>state.auth.userData._id)
+  const userId=data && data._id;
   
-  const type=(url)=>{
+  const Type=(url)=>{
     const extension=url.split('.').pop().toLowerCase()
     const videoFormats = ['mp4', 'avi', 'mov', 'wmv', 'flv'];
     const audioFormats = ['mp3', 'wav', 'ogg', 'm4a'];
@@ -64,22 +90,25 @@ import parse from 'html-react-parser';
     return null;;
   }
   if(blogs){
-  var mediaType=blogs.media?type(blogs.media):null
+  var mediaType=blogs.media?Type(blogs.media):null
 console.log(blogs)
 console.log(comments)}
-  const user=useSelector((state) => state.auth.userData);
+  const user=data;
   console.log(user)
   if(blogger){
-    var data={
+    var d={
       
       "blogger":blogger._id
     }
   }
-  console.log(data)
+ // console.log(data)
   const fetchRelated=async(category)=>{
     try {
       const res=await axios.get(`http://localhost:4000/api/v1/blog/cat/${category}`,{
-        withCredentials:true
+        withCredentials:true,
+        headers: {
+          usertype: type, // or 'ngo' based on the logged-in entity
+        },
       })
       if(res){
         setCat(res.data.data)
@@ -105,7 +134,10 @@ console.log(comments)}
           blogId:blogId
         }
         const res=await axios.post('http://localhost:4000/api/v1/bookmark/toggle',d,{
-          withCredentials:true
+          withCredentials:true,
+          headers: {
+            usertype: type, // or 'ngo' based on the logged-in entity
+          },
         })
         if(res.data.data){
           console.log("success")
@@ -124,7 +156,10 @@ console.log(comments)}
         const data={
           blogId:blogId}
         const res=await axios.post('http://localhost:4000/api/v1/like/handleLike',data,{
-          withCredentials:true
+          withCredentials:true,
+          headers: {
+            usertype: type, // or 'ngo' based on the logged-in entity
+          },
         })
         if(res.data.data){
           setLike(true)
@@ -162,7 +197,10 @@ console.log(comments)}
   
       try {
         const res=await axios.post('http://localhost:4000/api/v1/comment/post',data,{
-          withCredentials:true
+          withCredentials:true,
+          headers: {
+            usertype: type, // or 'ngo' based on the logged-in entity
+          },
         })
         if(res.data.data){
           console.log(res.data.data)
@@ -240,11 +278,13 @@ console.log(comments)}
               {/* Author info and metadata */}
               <div className="flex items-center justify-between mb-8 border-b pb-4">
                 <div className="flex items-center">
+                  <Link to={`/pUser/${blogs.ownerDetails._id}`}>
                   <img 
                     className="h-12 w-12 rounded-full mr-4" 
                     src={blogs.ownerDetails.avatar} 
                     alt={blogs.ownerDetails.fullname} 
                   />
+                  </Link>
                   <div>
                     <p className="text-xl font-semibold text-gray-900">{blogs.ownerDetails.fullname}</p>
                     <p className="text-gray-600">@{blogs.ownerDetails.username}</p>
@@ -314,16 +354,16 @@ console.log(comments)}
             </div>
 
             {/* Comments Sidebar */}
-            <div className="md:w-1/3 bg-gray-50 p-6 border-l flex flex-col h-[calc(100vh-6rem)]">
+          <div className="md:w-1/3 bg-gray-50 p-6 border-l flex flex-col h-[calc(100vh-6rem)]">
   <h2 className="text-2xl font-bold mb-6">Comments</h2>
   <div className="flex-grow overflow-y-auto mb-6">
-    <div className="space-y-6">
-      {comments.map(comment => (
+      <div className="space-y-6">
+      {comments && comments.map(comment => (
         <div key={comment._id} className="bg-white p-4 rounded-lg shadow">
           <div className="flex items-center mb-2">
-            <img src={comment.commentOwner.avatar} alt={comment.commentOwner.username} className="w-8 h-8 rounded-full mr-2" />
+            <img src={comment.commentOwner.avatar?comment.commentOwner.avatar:''} alt={comment.commentOwner.username?comment.commentOwner.username:comment.commentOwner.name} className="w-8 h-8 rounded-full mr-2" />
             <div>
-              <p className="font-semibold">{comment.commentOwner.username}</p>
+              <p className="font-semibold">{comment.commentOwner.username?comment.commentOwner.username:comment.commentOwner.name}</p>
               <p className="text-xs text-gray-500">{comment.createdAt}</p>
             </div>
           </div>
@@ -332,7 +372,7 @@ console.log(comments)}
       ))}
     </div>
   </div>
-  {/* Add comment form */}
+  {/* Add comment form */} 
   <form className="mt-auto" onSubmit={handleCommentSubmit}>
     <textarea 
       className="w-full p-2 border rounded-md" 

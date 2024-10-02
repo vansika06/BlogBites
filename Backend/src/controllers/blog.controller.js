@@ -8,6 +8,15 @@ import jwt from "jsonwebtoken"
 import Mongoose from "mongoose";
 import {ObjectId} from "mongoose"
 import { fetchBlog, fetchParticular } from "../utils/blog.js";
+const getOwner=(req)=>{
+   if(req.user){
+      return req.user._id
+   }
+   else if(req.ngo){
+     return req.ngo._id
+   }
+   throw new Error("Unauthorized");
+}
 const publishPost=asyncHandler(async(req,res)=>{
     const {title,thumbnail,description,category,status}=req.body
     if([title,thumbnail,description,category,status].some((field)=>(field?.trim()===""))){
@@ -157,14 +166,14 @@ const getPostById=asyncHandler(async(req,res)=>{
                      
                      isFollowing:{
                         $cond:{
-                           if:{$in:[req.user?._id,"$followers.follower"]},
+                           if:{$in:[req.user?req.user_id:req.ngo._id,"$followers.follower"]},
                            then:true,
                            else:false
                         }  
                      },
                      reqStat:{
                         $cond:{
-                           if:{$in:[req.user?._id,"$requests.sender"]},
+                           if:{$in:[req.user?req.user_id:req.ngo._id,"$requests.sender"]},
                            then:true,
                            else:false
                         }
@@ -261,14 +270,14 @@ const getPostById=asyncHandler(async(req,res)=>{
                  },
                 isLiked:{
                   $cond:{
-                      if:{$in:[req.user?._id,{$ifNull:["$likedBy.likedBy",[]]}]},
+                      if:{$in:[req.user?req.user_id:req.ngo._id,{$ifNull:["$likedBy.likedBy",[]]}]},
                       then:true,
                       else:false
                    }  
                 },
                 isBookmarked:{
                   $cond:{
-                     if:{$in:[req.user?._id,{$ifNull:["$bookmarked.user",[]]}]},
+                     if:{$in:[req.user?req.user_id:req.ngo._id,{$ifNull:["$bookmarked.user",[]]}]},
                      then:true,
                      else:false
                   }
@@ -344,13 +353,17 @@ const userDrafts=asyncHandler(async(req,res)=>{
 })
 const deletePost=asyncHandler(async(req,res)=>{
    const {blogId}=req.body
+  
    const r=await Blog.findByIdAndDelete(blogId)
    console.log(r)
    console.log(blogId)
+   const user=await User.findById(r.owner)
+   user.postHistory=user.postHistory.filter((id)=>id.toString()!==blogId.toString())
+   await user.save()
    if(r){
       return res
       .status(200)
-      .json(new ApiResponse(200,null,"post deleted successfully"))
+      .json(new ApiResponse(200,user,"post deleted successfully"))
    }
    else{
       throw new ApiError(500,"unable to delete the post ")
@@ -623,6 +636,25 @@ return res.status(200).json(new ApiResponse(200,userPosts," posts from this user
    }
 })
 
+const searchBlog=asyncHandler(async(req,res)=>{
+   const {title}=req.body
+   console.log(title)
+   const page=parseInt(req.query.p)||0
+   const blogsPerPage=15
+   const blogs=await fetchBlog({
+    $or:[  {title:new RegExp(title,'i')},{thumbnail:new RegExp(title,'i')}]
+   },
+   {
+      createdAt:-1
+   },
+   blogsPerPage*page,blogsPerPage
+)
+console.log(blogs)
+   if( !blogs ){
+      return res.status(200).json(new ApiResponse(200,null,"NO results found"))
+   }
+   return res.status(200).json(new ApiResponse(200,blogs," results found"))
+})
 export{
     publishPost,
     getAllPost,
@@ -637,5 +669,6 @@ export{
     similarPosts,
     deletePost,
     Editpost,
-    editImage
+    editImage,
+    searchBlog
 }

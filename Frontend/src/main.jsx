@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 import store from './store/store.js'
+import { PersistGate } from 'redux-persist/integration/react'
+import { persistStore } from 'redux-persist'
 import { createBrowserRouter,RouterProvider } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import Login from './components/Login.jsx'
@@ -22,7 +24,7 @@ import Postlayout from './components/Postlayout.jsx'
 import Messagecontainer from './components/Chattest.jsx'
 //import { Header } from './components/index.js'
 import  Dashboard  from './components/Dashboard.jsx'
-
+import ChatWindow from './components/Eventchat.jsx'
 import UserpostPage from './components/Userpost.jsx'
 import Editimg from './components/Editimg.jsx'
 import EditAvatar from './components/EditAvatar.jsx'
@@ -30,6 +32,15 @@ import Tweet from './components/Tweet.jsx'
 import Drafts from './components/Drafts.jsx'
 import Liked from './components/Liked.jsx'
 import Bookmark from './components/Bookmark.jsx'
+import Search from './components/Search.jsx'
+import User from './components/User.jsx'
+import Register from './components/Ngo/Register.jsx'
+import Event from './components/Ngo/Event.jsx'
+import EventLayout from './components/Ngo/Pevent.jsx'
+import AllEvent from './components/Ngo/AllEvent.jsx'
+import LoginNgo from './components/LoginNgo.jsx'
+import YourEvnts from './components/Ngo/YourEvnts.jsx'
+let persistor=persistStore(store)
 const router=createBrowserRouter([{
   path:'/',
   element:<App/>,
@@ -169,6 +180,66 @@ const router=createBrowserRouter([{
                                 <Bookmark/>
                               //  </Protected>
                             ),},
+                            {
+                              path: "/search",
+                              element: (
+                                  // <Protected authentication>
+                                  //     {" "}
+                                  <Search/>
+                                //  </Protected>
+                              ),},
+                              {
+                                path: "/pUser/:userId",
+                                element: (
+                                    // <Protected authentication>
+                                    //     {" "}
+                                    <User/>
+                                  //  </Protected>
+                                ),},
+                                {
+                                  path: "/registerNgo",
+                                  element: (
+                                      // <Protected authentication>
+                                      //     {" "}
+                                      <Register/>
+                                    //  </Protected>
+                                  ),},
+                                  {
+                                    path: "/loginNgo",
+                                    element: (
+                                        // <Protected authentication>
+                                        //     {" "}
+                                        <LoginNgo/>
+                                      //  </Protected>
+                                    ),},
+                                  {
+                                    path: "/addEvent",
+                                    element: (
+                                       
+                                        <Event/>
+                                      
+                                    ),},
+                                    {
+                                      path: "/pEvent",
+                                      element: (
+                                         
+                                         <AllEvent/>
+                                        
+                                      ),},
+                                      {
+                                        path: "/eventChat/:groupId",
+                                        element: (
+                                           
+                                           <ChatWindow/>
+                                          
+                                        ),},
+                                        {
+                                          path: "/yourEvents",
+                                          element: (
+                                             
+                                             <YourEvnts/>
+                                            
+                                          ),},
     ]}])/*
     {
       path:"/all-posts",
@@ -216,8 +287,9 @@ const router=createBrowserRouter([{
 ReactDOM.createRoot(document.getElementById('root')).render(
   <Provider store={store}>
      <SocketContextProvider> 
-      
+      <PersistGate persistor={persistor}>
    <RouterProvider router={router}/>
+   </PersistGate>
     </SocketContextProvider> 
   </Provider>
 )
