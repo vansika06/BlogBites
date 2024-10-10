@@ -3,13 +3,19 @@ import axios from 'axios'
 import { useSelector } from 'react-redux'
 import Tweet from './Tweet'
 import Activity from './Activity'
+import { UserType } from '@/features/userType'
+ 
 function Liked() {
     const [liked,setLiked]=useState('')
     const user=useSelector((state)=>state.auth.userData)
+    const state=useSelector((state)=>state)
+    const {type,data}=UserType(state)
     const fetchLiked=async()=>{
        try {
          const res=await axios.get('http://localhost:4000/api/v1/like/userliked',{
-             withCredentials:true
+             withCredentials:true,
+             headers:{
+             usertype: type, }
            })
            if(res){
              setLiked(res.data.data)

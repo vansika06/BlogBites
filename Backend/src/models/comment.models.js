@@ -11,13 +11,15 @@ const commentSchema=new Schema({
     },
     user:{
         type:mongoose.Schema.Types.ObjectId,
-        ref:"User",
+        refPath: 'ownerType',
         required:true
     },
     ownerType:{
-        type:String,
-        required:true
+        type: String,
+required: true,
+enum: ['user', 'ngo'], 
     }
+
     
 },{timestamps:true})
 export const Comment=mongoose.model("Comment",commentSchema)

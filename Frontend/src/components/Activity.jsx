@@ -16,6 +16,7 @@ import axios from 'axios';
 import parse from 'html-react-parser';
 function Activity({post}) {
   const user=useSelector((state)=>state.auth.userData)
+  console.log(post)
   console.log(post.blog.owner)
   const navigate=useNavigate()
   const handleDelete=async(id)=>{

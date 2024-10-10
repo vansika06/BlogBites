@@ -2,18 +2,19 @@ import React ,{useEffect,useState} from 'react'
 import axios from 'axios'
 import { UserType } from '@/features/userType.js'
 import { useSelector } from 'react-redux';
+
+
 import EventLayout from './Pevent.jsx';
-function AllEvent() {
+
+function Ngoevent() {
   const state = useSelector((state) => state);
   const {type,data}=UserType(state)
     const  [event,setEvent]=useState([]);
     const fetch=async()=>{
       try{
-        const res=await axios.get('http://localhost:4000/api/v1/ngo/getAllEvents',{
+        const res=await axios.get('http://localhost:4000/api/v1/ngo/getngoEvents',{
           withCredentials:true,
-          headers: {
-           usertype: type, // or 'ngo' based on the logged-in entity
-         },
+          
           })
           if(res.data){
             setEvent(res.data.data)
@@ -30,9 +31,9 @@ function AllEvent() {
   return (
     <div className='grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-6 mt-5'>
         {
-            event && event.map((e,index)=>(
+            event && event.map((e)=>(
                 <>
-                <EventLayout event={e} key={index}/>
+                <EventLayout event={e} key={e._id}/>
                 </>
             ))
         }
@@ -41,4 +42,4 @@ function AllEvent() {
   )
 }
 
-export default AllEvent
+export default Ngoevent

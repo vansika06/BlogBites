@@ -40,6 +40,8 @@ import EventLayout from './components/Ngo/Pevent.jsx'
 import AllEvent from './components/Ngo/AllEvent.jsx'
 import LoginNgo from './components/LoginNgo.jsx'
 import YourEvnts from './components/Ngo/YourEvnts.jsx'
+import Ngoevent from  './components/Ngo/Ngoevent.jsx'
+import Ngodashboard from './components/Ngodashboard.jsx'
 let persistor=persistStore(store)
 const router=createBrowserRouter([{
   path:'/',
@@ -240,6 +242,20 @@ const router=createBrowserRouter([{
                                              <YourEvnts/>
                                             
                                           ),},
+                                          {
+                                            path: "/ngoevents",
+                                            element: (
+                                               
+                                               <Ngoevent/>
+                                              
+                                            ),},
+                                            {
+                                              path: "/ngodashboard",
+                                              element: (
+                                                 
+                                                 <Ngodashboard/>
+                                                
+                                              ),},
     ]}])/*
     {
       path:"/all-posts",

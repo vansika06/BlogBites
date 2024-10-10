@@ -418,16 +418,13 @@ const updateCoverImage=asyncHandler(async(req,res)=>{
 
 
 const getUserChannelProfile=asyncHandler(async(req,res)=>{
-   const {username}=req.params
-   if(!(username?.trim())){
-      throw new ApiError(400,"userid is missing")
-   }
-   //const user=await User.findById(userId)
-   //user.postHistory.forEach((p)=>populate('p'))
+   const {userId}=req.params
+   const objectId= new Mongoose.Types.ObjectId(userId);
+  
    const channel=await User.aggregate([
       {
          $match:{
-            username:username.toLowerCase()
+            _id:objectId
          }
       },
      

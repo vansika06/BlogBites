@@ -6,7 +6,9 @@ import { useSelector } from 'react-redux';
 import { UserType } from '@/features/userType';
 import parse from 'html-react-parser';
 function Tests({post}){
+  console.log(post)
   const { image,media,category, title, thumbnail, likes, comments,ownerDetails, description,isLiked ,_id} = post;
+  console.log(isLiked)
   const [like,setLike]=useState(isLiked)
   const [likecount,setLikecount]=useState(likes)
   const state = useSelector((state) => state);

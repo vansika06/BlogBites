@@ -110,7 +110,7 @@ function Verification() {
                         },
                   })
                   setTimeout(()=>{
-                    navigate('/')
+                    navigate('/main')
                   },3000)
                     
                   }

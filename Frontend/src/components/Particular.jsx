@@ -8,7 +8,7 @@ import Comment from './Comment.jsx';
 import toast, { Toaster } from 'react-hot-toast';
 import { Heart } from 'lucide-react';
 import parse from 'html-react-parser';
-
+import { formatDistanceToNow } from 'date-fns';
 import { UserType } from '@/features/userType';
  function Particular() {
   const {blogId}=useParams()
@@ -27,7 +27,21 @@ import { UserType } from '@/features/userType';
  const [bookmark,setBookmark]=useState('')
  const [likecount,setLikecount]=useState('')
  const [commentCount,setCommentcount]=useState('')
- 
+ const formatDate = (date) => {
+  const blogDate = new Date(date);
+  const formattedDate = blogDate.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const formattedTime = blogDate.toLocaleTimeString([], { 
+    hour: '2-digit', 
+    minute: '2-digit'
+  });
+  const timeAgo = formatDistanceToNow(blogDate, { addSuffix: true });
+
+  return `${formattedDate} at ${formattedTime} (${timeAgo})`;
+};
  //console.log(utype)
   const f=async()=>{
     try{
@@ -292,20 +306,40 @@ console.log(comments)}
                   </div>
                   <div>
                     <h3 className='mb-1 ml-2 mt-2'>Followers:{blogs.ownerDetails.followersCount}</h3>
-                    {blogs.ownerDetails._id===userId?'':(<>
-                      {blogs.ownerDetails.isFollowing && (
-                      <button type="button" class="text-white bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-teal-300 dark:focus:ring-teal-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Following</button>
-                    )}
-                    {!blogs.ownerDetails.isFollowing && (
-                      <button type="button" class={`text-white bg-gradient-to-r from-pink-400 via-pink-500 to-pink-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-pink-300 dark:focus:ring-pink-800 shadow-md shadow-pink-500/50 dark:shadow-md dark:shadow-pink-800/80 font-medium rounded-md text-sm px-3 py-2 text-center me-2 mb-1 ml-2 mt-2 ${blogs.ownerDetails.reqStat?'disabled':''}`} onClick={handleRequest}>{reqstat}</button>
-                    )}</>)}
+                    {
+  type === "user" && (
+    blogs.ownerDetails._id === userId ? (
+      '' // No buttons if it's the user's own post
+    ) : (
+      <>
+        {blogs.ownerDetails.isFollowing ? (
+          <button
+            type="button"
+            className="text-white bg-gradient-to-r from-green-500 to-green-700 hover:from-green-400 hover:to-green-600 focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 font-semibold rounded-full text-sm px-6 py-2 shadow-lg transition-all duration-300 ease-in-out"
+          >
+            Following
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={`text-white bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 font-semibold rounded-full text-sm px-6 py-2 shadow-lg transition-all duration-300 ease-in-out ${blogs.ownerDetails.reqStat ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={handleRequest}
+          >
+            {reqstat || "Follow"}
+          </button>
+        )}
+      </>
+    )
+  )
+}
+
                     
                     
                   </div>
                 </div>
                 <div className="flex items-center text-gray-600">
                   <span className="mr-2">&#128197;</span>
-                  <span>{blogs.createdAt}</span>
+                  <span>{ formatDate(blogs.createdAt)}</span>
                 </div>
               </div>
               
@@ -364,7 +398,7 @@ console.log(comments)}
             <img src={comment.commentOwner.avatar?comment.commentOwner.avatar:''} alt={comment.commentOwner.username?comment.commentOwner.username:comment.commentOwner.name} className="w-8 h-8 rounded-full mr-2" />
             <div>
               <p className="font-semibold">{comment.commentOwner.username?comment.commentOwner.username:comment.commentOwner.name}</p>
-              <p className="text-xs text-gray-500">{comment.createdAt}</p>
+              <p className="text-xs text-gray-500">{formatDate(comment.createdAt)}</p>
             </div>
           </div>
           <p className="text-gray-700">{comment.content}</p>

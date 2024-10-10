@@ -58,7 +58,7 @@ function Event() {
                   padding: '20px', 
                 },
           })
-          navigate("/")
+          navigate("/main")
           
         }
     }
@@ -243,6 +243,8 @@ const Sub=(data) => {
         </CardContent>
         
       </Card>
+      <Toaster/>
+
     </div>
   )
 }

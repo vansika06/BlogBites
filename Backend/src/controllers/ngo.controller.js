@@ -13,6 +13,7 @@ import {generateAccessAndRefreshToken} from './user.controller.js'
 import { Eventgrp } from "../models/eventgrp.models.js";
 import { receiverSocket,io } from "../app.js";
 import { Groupmessage } from "../models/groupmessage.models.js";
+
 const generateTokens=async(userId)=>{///jb pswd wgerah validate ho ja rha h tb yeh kr rhe isliye user obj jo banaye h usse asani se id nikal kr pass kr skte
    try{
       console.log("hi")
@@ -179,32 +180,89 @@ const addEvent=asyncHandler(async(req,res)=>{
 
 })
 const getAllEvents=asyncHandler(async(req,res)=>{
-    const events=await Event.find({}).populate("organiser")
+   const events=await Event.aggregate([
+      {
+         $lookup:{
+            from:'ngos',
+            foreignField:'_id',
+            localField:'organiser',
+            as:'organiser',
+            pipeline:[
+               {
+                  $project:{
+                     name:1,
+                     
+                     avatar:1,
+                     _id:1
+                  }
+               }
+            ]
+         },
+
+      },{
+         $addFields:{
+            organiser:{
+               $first:"$organiser"
+            },
+            isJoined:{
+               $cond:{
+                  if:{$in:[req.user?._id,{$ifNull:["$participants",[]]}]},
+                  then:true,
+                  else:false
+               }  
+            }
+      }}
+   ])
+   // const events=await Event.find({}).populate("organiser").lean()
     if(!events){
         throw new ApiError(400,"unable to fetch the events")
     }
+   // if(events){   
+   //     events.map(e => ({
+   //       ...e, // If using Mongoose
+   //       isJoined: e.participants.some(id => id.toString() === req.user?._id.toString())
+   //     }));
+   //   }
+    
+    console.log("Final events:", events);
+      console.log(events)
     return res.status(200).json(new ApiResponse(200,events,"Events fetched successfully"))
 })
 const participate=asyncHandler(async(req,res)=>{
     const {eventId,groupId}=req.body
+    console.log(eventId)
+    console.log(groupId)
     if(!eventId){
       throw new ApiError(400,"Event id is required")
     }
-    const event=await Event.findById(eventId)
-    const group=await Eventgrp.findById(groupId)
-    if(!event){
+    const group=await Eventgrp.findByIdAndUpdate(groupId,
+      { $addToSet: { participants: req.user._id }}
+       ,{
+          new:true
+       }
+    )
+    
+    const event=await Event.findByIdAndUpdate(eventId,
+      { $addToSet: { participants: req.user._id }}
+       ,{
+          new:true
+       }
+    )
+    console.log(event)
+    console.log(group)
+    if(!event || !group){
       throw new ApiError(400,"no such event exists")
     }
-    event.participants.push(req.user._id)
-    group.participants.push(req.user._id)
-    await event.save()
-    await group.save()
-    const data={
-      groupId:groupId,
-      userId:req.user._id
-   }
-   io.emit("joinEventGrp",data)
-   res.status(200).json({ message: 'User successfully joined the group' });
+   //  event.participants.push(req.user._id)
+   //  group.participants.push(req.user._id)
+   //  await event.save()
+   //  await group.save()
+   //  const data={
+   //    groupId:groupId,
+   //    userId:req.user._id
+   // }
+ //  io.emit("joinEventGrp",data)
+   res.status(200).json(new ApiResponse(200,'','User successfully joined the event'));
 })
 const logOutNgo=asyncHandler(async(req,res)=>{
    console.log(req.ngo._id)
@@ -264,21 +322,18 @@ const getCurrentUser=asyncHandler(async(req,res)=>{
  };
  const handleGroupJoin=asyncHandler(async(req,res)=>{
    const {groupId}=req.body
-   const group=await Eventgrp.findByIdAndUpdate(groupId,
-     { $addToSet: { participants: req.user._id }}
-      ,{
-         new:true
-      }
-   )
+   console.log(groupId)
+   const group=await Eventgrp.findById(groupId)
    if(!group){
       throw new ApiError(400,"Unable to join");
 
    }
    const data={
       groupId:groupId,
-      userId:req.user._id
+      userId:req.user?req.user._id:req.ngo._id
    }
    io.emit("joinEventGrp",data)
+   return res.status(200).json(new ApiResponse(200,'',"mesaage sent successfully"))
  })
  const sendMessage=asyncHandler(async(req,res)=>{
    const {group,msg}=req.body
@@ -299,17 +354,27 @@ const getCurrentUser=asyncHandler(async(req,res)=>{
        groupId:group,
        message:msg,
        sender:req.user?req.user._id:req.ngo._id,
-       image:uploadedImg?uploadedImg.url:""
+       image:uploadedImg?uploadedImg.url:"",
+       ownerType:req.user?"User":"Ngo"
 
    })
    console.log(newMessage)
    if(!newMessage){
        throw new ApiError(400,"unable to send msg")
    }
+   if(req.user?._id){
+      await newMessage.populate({path:"sender",select:"username fullname email avatar"})
+   }
+   else{
+      await newMessage.populate({path:"sender",select:"name email avatar"})
+   }
    if(channel){
-       const senders=channel.participants.filter((member)=>member.toString()!==(req.user?req.user._id.toString():req.ngo._id.toString()))
+      console.log(channel.ngo)
+      const participants = [...channel.participants, channel.ngo];
+       const senders=participants.filter((member)=>member.toString()!==(req.user?req.user._id.toString():req.ngo._id.toString()))
        console.log(1)
        console.log(senders)
+       //senders.push(newMessage.sender)
        senders.forEach((member)=>{
            const receiverSocketId=receiverSocket(member)
            console.log(receiverSocketId)
@@ -331,12 +396,7 @@ const getCurrentUser=asyncHandler(async(req,res)=>{
    //     throw new ApiError(400,"unable to create your conversation")
    // }
    // console.log(newConversation)
-   if(req.user._id){
-      await newMessage.populate({path:"sender",select:"username fullname email avatar"})
-   }
-   else{
-      await newMessage.populate({path:"sender",select:"name email avatar"})
-   }
+   
  
    return res.status(200).json(new ApiResponse(200,newMessage,"mesaage sent successfully"))
 
@@ -358,4 +418,70 @@ const getUserEvents=asyncHandler(async(req,res)=>{
    }
    return res.status(200).json(new ApiResponse(200,events,"Events fetched successfully"))
 })
-export {register,addEvent,getAllEvents,loginNgo,logOutNgo,participate,getCurrentUser,handleGroupJoin,sendMessage,fetchParticipants,getUserEvents}
+const totalVol=asyncHandler(async(req,res)=>{
+   const event=await Event.find({organiser:req.ngo._id})
+   console.log(event)
+   let r=0;
+   for(let i of event){
+      r+=i.participants.length
+   }
+   //event.forEach((e)=>r+=e.participants.length)
+   return res.status(200).json(new ApiResponse(200,r,"Total participants"))
+})
+const getNgoevents=asyncHandler(async(req,res)=>{
+ //.  const objectId = new Mongoose.Types.ObjectId(req.ngo._id);
+  // const event=await Event.find({organiser:req.ngo._id})
+   const events=await Event.aggregate([
+      {
+         $match:{
+            organiser:req.ngo._id
+         }
+      },
+      {
+         $lookup:{
+            from:'ngos',
+            foreignField:'_id',
+            localField:'organiser',
+            as:'organiser',
+            pipeline:[
+               {
+                  $project:{
+                     name:1,
+                     
+                     avatar:1,
+                     _id:1
+                  }
+               }
+            ]
+         },
+
+      },{
+         $addFields:{
+            organiser:{
+               $first:"$organiser"
+            },
+            isJoined:{
+               $cond:{
+                  if:{$in:[req.user?._id,{$ifNull:["$participants",[]]}]},
+                  then:true,
+                  else:false
+               }  
+            }
+      }}
+   ])
+   // const events=await Event.find({}).populate("organiser").lean()
+    if(!events){
+        throw new ApiError(400,"unable to fetch the events")
+    }
+   // if(events){   
+   //     events.map(e => ({
+   //       ...e, // If using Mongoose
+   //       isJoined: e.participants.some(id => id.toString() === req.user?._id.toString())
+   //     }));
+   //   }
+    
+    console.log("Final events:", events);
+      console.log(events)
+    return res.status(200).json(new ApiResponse(200,events,"Events fetched successfully"))
+})
+export {register,addEvent,getAllEvents,loginNgo,logOutNgo,participate,getCurrentUser,handleGroupJoin,sendMessage,fetchParticipants,getUserEvents,totalVol,getNgoevents}

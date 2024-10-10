@@ -9,6 +9,7 @@ import {loginNgo ,isVerified} from "../features/ngo.js"
 import Animation from './Animation/Animation.jsx'
 import Spinner from './Spinner.jsx'
 import toast, { Toaster } from 'react-hot-toast';
+import { logout } from '@/features/authslice.js'
 //for react hooke form
 import {useForm} from 'react-hook-form'
 import { loaded } from '../features/loading.js'
@@ -18,6 +19,7 @@ import { loaded } from '../features/loading.js'
     const dispatch=useDispatch()
     const { register, handleSubmit } = useForm()
     const [error,setError]=useState("")
+    const user=useSelector((state)=>state.auth.userData)
     const login=async(data)=>{
         setError("")
         try{
@@ -36,9 +38,16 @@ import { loaded } from '../features/loading.js'
                 dispatch(loginNgo(userData.data.data))
                 dispatch(isVerified())
                 dispatch(loaded())
+                
+                //console.log(user)
+                if(user?.username){
+                    console.log(user)
+                  dispatch(logout())
+                }
                 console.log(loading)
                 console.log(userData.data.data);
-                navigate("/")
+                console.log("Hi")
+                navigate("/main")
               }
             }
         }

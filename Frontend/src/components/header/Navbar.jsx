@@ -57,11 +57,11 @@ const handleClick = () => {
     setIsOpen(!isOpen)
 };
     const navItems = [
-        {
-            name: 'Home',
-            url: '/',
-            active: true
-        },
+        // {
+        //     name: 'Home',
+        //     url: '/',
+        //     active: true
+        // },
         {
             name: 'Login',
             url: '/login',
@@ -87,6 +87,11 @@ const handleClick = () => {
              url: "/main",
              active: fStatus
          },
+         {
+          name: "Allevents",
+          url: "/pEvent",
+          active: fStatus
+      },
         
     ];
     const handleOptionChange=(value)=>{
@@ -153,7 +158,7 @@ const handleClick = () => {
                                    
                   </li>}           
                 </ul>
-                {fStatus && (
+                {authStatus && (
                            <div className="flex flex-col gap-6 items-center lg:flex-row lg:gap-8">
                             <TooltipProvider>
                             <Tooltip>
@@ -202,7 +207,7 @@ const handleClick = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                     */}
-                     <Link to='/dashboard'>
+                     <Link to={authStatus?'/dashboard':'/ngodashboard'}>
                      <Avatar>
              <AvatarImage src={`${user && user.avatar?user.avatar:ngo.avatar}`} />
              <AvatarFallback>{`${user && user.username?user.username:ngo.name}`}</AvatarFallback>

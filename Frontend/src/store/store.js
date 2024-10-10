@@ -22,7 +22,13 @@ const reducer=combineReducers({
 const persistedReducer=persistReducer(persistConfig,reducer)
 
 const store=configureStore({
-    reducer:persistedReducer
+    reducer:persistedReducer,
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware({
+          serializableCheck: {
+            ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+          },
+        }),
 })
 
 export default store

@@ -5,6 +5,8 @@ import Blogitem from './Blogitem';
 import { useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { UserType } from '@/features/userType';
+import Tests from './Tests';
+import Activity from './Activity';
  function CatPosts() {
     const [Data,setData]=useState([]);
     const location=useLocation()
@@ -30,16 +32,21 @@ import { UserType } from '@/features/userType';
        } ,[category])
        console.log(Data)
   return (
-    <div>
-      <section className='container mx-auto flex flex-wrap md:gap-x-5 gap-y-5 px-5 py-10'>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-8  mx-8 my-8 px-5 auto-cols-max">
+    <div className='flex mt-5 gap-5'>
         {Data.map((post,index)=>(
-          <Blogitem key={index} title={post.title} thumbnail={post.thumbnail} description={post.description}
-          image={post.image} owner={post.owner} createdAt={post.createdAt}/>
+          // <Blogitem key={index} title={post.title} thumbnail={post.thumbnail} description={post.description}
+          // image={post.image} owner={post.owner} createdAt={post.createdAt}/>
+         // <Activity  key={index} post={post} />
+         
+         <div className="w-full md:w-2/3 lg:w-1/2">
+          <Tests post={post} index={index} />
+          </div>
         ))}
-        </div>
-
-      </section>
+      
+      {
+    Data.length===0 && <h1 className='left-50'>No results found...</h1>
+  }
+     
     </div>
   )
 }

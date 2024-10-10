@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { UserType } from '@/features/userType';
 import { Send,FileImage } from 'lucide-react';
 import axios from 'axios';
+import toast, { Toaster } from 'react-hot-toast';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ function  ChatWindow() {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([])
   const [loading,setLoading]=useState(false)
+  const [event,setEvent]=useState('')
   const [participants,setParticipants]=useState([])
   const {socket,onlineUsers}=useSocket()
   console.log(onlineUsers)
@@ -41,7 +43,10 @@ function  ChatWindow() {
   
         setLoading(true)
         const res=await axios.get(`http://localhost:4000/api/v1/channel/getMsg/${groupId}`,{
-          withCredentials:true  
+          withCredentials:true ,
+          headers:{
+            usertype:type
+          } 
         })
         console.log(res.data.data)
         console.log(data._id)
@@ -51,6 +56,24 @@ function  ChatWindow() {
       console.log(error)
     }
 }
+useEffect(()=>{
+  if(socket){
+    socket.on("joinEventGrp",async(data)=>{
+      if(data.groupId===groupId){
+        toast.success(data.username ? ` ${data.username} Joined!` : `${data.name} Joined!`,{
+          position:'top-right',
+          duration:3000,
+          style: {
+             
+              fontSize: '20px', // Increase the font size
+              padding: '20px', 
+            },
+      })
+      }
+    })
+  }
+  
+},[socket,data,groupId,participants])
 const fetchPart=async()=>{
  try {
    const res=await axios.post('http://localhost:4000/api/v1/ngo/participants',{grpId:groupId},{
@@ -62,6 +85,7 @@ const fetchPart=async()=>{
    })
    if(res){
     console.log(res.data.data)
+    setEvent(res.data.data)
     setParticipants(res.data.data.participants)
     console.log(res.data.data.participants)
    }
@@ -78,6 +102,7 @@ useEffect(()=>{
   if(socket){
     socket.on("newGroupmsg",(msg)=>{
       if(msg.groupId===groupId){
+        console.log(msg)
         setMessages((messages)=>[...messages,msg])
         console.log(messages)
       }
@@ -173,7 +198,12 @@ const handleClick=async()=>{
         <div className="flex-grow flex flex-col justify-between p-4">
           {/* Header */}
           <div className="flex justify-between items-center border-b pb-2 mb-4">
-            {/* <h2 className="text-2xl font-bold">{currentRoom.name}</h2> */}
+          <div className="flex justify-between items-center border-b pb-2 mb-4">
+            <div>
+              <h2 className="text-2xl font-bold">{event.name}</h2>
+              <p className="text-sm text-gray-600">Organized by: {}</p>
+            </div>
+          </div>
           </div>
 
           {/* Chat Messages */}
@@ -280,9 +310,14 @@ const handleClick=async()=>{
               Send
             </button>
           </form> */}
+          <Toaster/>
         </div>
       </div>
+
+
+
     </div>
+   
   );
 };
 

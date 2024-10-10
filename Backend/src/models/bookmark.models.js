@@ -8,8 +8,13 @@ const bookmarkSchema=new mongoose.Schema({
     
         user:{
             type:mongoose.Schema.Types.ObjectId,
-            ref:"User",
+            refPath: 'ownerType',
             required:true
+        },
+        ownerType:{
+            type: String,
+    required: true,
+    enum: ['User', 'Ngo'], 
         }
     
 },{timestamps:true})

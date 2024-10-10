@@ -2,6 +2,7 @@ import { Router } from "express";
 import { changeCurrentPassword, getCurrentUser, getParticularuser, getUserById, getUserChannelProfile, getWatchHistory, logOutUser, loginUser, refreshAccessToken, registerUser,updateAccountDetails, updateAvatar, updateCoverImage,verifyEmail,verifyOtp } from "../controllers/user.controller.js"
 import { upload } from "../Middlewares/multer.middleware.js";
 import { verifyJWT } from "../Middlewares/auth.middleware.js";
+import { dynamicVerify } from "../Middlewares/dynamic.middleware.js";
 const router=Router()
 
 
@@ -21,7 +22,7 @@ router.route("/avatar").patch(verifyJWT,upload.single("avatar"),updateAvatar)
 
 router.route("/cover-image").patch(verifyJWT,upload.single("coverImage"),updateCoverImage)
 
-router.route("/c/:username").get(verifyJWT,getUserChannelProfile)
+router.route("/c/:userId").get(dynamicVerify,getUserChannelProfile)
 router.route("/history").get(verifyJWT,getWatchHistory)
 router.route("/user").post(verifyJWT,getUserById)
 router.route("/xyz/:userId").get(verifyJWT,getParticularuser)

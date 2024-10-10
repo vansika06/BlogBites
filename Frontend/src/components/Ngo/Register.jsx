@@ -10,6 +10,7 @@ import axios from 'axios'
 import Animation from '../Animation/Animation.jsx'
 import toast, { Toaster } from 'react-hot-toast';
 import { loaded } from '../../features/loading.js'
+import { logout } from '@/features/authslice.js'
 import Spinner from '../Spinner.jsx'
 
  function Register(){
@@ -17,7 +18,7 @@ import Spinner from '../Spinner.jsx'
     const dispatch=useDispatch()
     const [error,setError]=useState("");
     const [picture, setPicture] = useState(null);
-    
+    const user=useSelector((state)=>state.auth.userData)
     const loading=useSelector((state)=>state.loader.loading)
   const onChangePicture = (e) => {
     setPicture(URL.createObjectURL(e.target.files[0]));
@@ -43,6 +44,11 @@ import Spinner from '../Spinner.jsx'
             if(ngoData){
                 console.log(ngoData.data.data.user)
               dispatch(loginNgo(ngoData.data.data.user));
+              
+              if(user?.username){
+                dispatch(logout())
+              }
+
               dispatch(loaded())
               navigate("/verify")
               

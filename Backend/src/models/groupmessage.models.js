@@ -6,7 +6,13 @@ const groupmessageSchema=new mongoose.Schema({
     },
     sender:{
         type:mongoose.Schema.Types.ObjectId,
-        ref:"User"
+        refPath: 'ownerType',
+        required:true
+    },
+    ownerType:{
+        type: String,
+required: true,
+enum: ['User', 'Ngo'], 
     },
     image:{
         type:String,

@@ -1,10 +1,11 @@
 import React,{useState,useEffect} from 'react'
 import axios from 'axios'
 import { useSelector } from 'react-redux'
-
+import { UserType } from '@/features/userType'
 import Activity from './Activity'
 function Bookmark() {
-    
+  const state=useSelector((state)=>state)
+    const {type,data}=UserType(state)
     const user=useSelector((state)=>state.auth.userData)
     const [books,setBooks]=useState('')
    /* const fetchcommented=async()=>{
@@ -24,7 +25,10 @@ function Bookmark() {
    const  fetchBookmark=async()=>{
     try {
       const res=await axios.get('http://localhost:4000/api/v1/bookmark/show',{
-          withCredentials:true
+          withCredentials:true,
+          headers:{
+            usertype:type
+          }
         })
         if(res){
             

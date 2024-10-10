@@ -42,7 +42,7 @@ else{
 
 
 const getAllLikedPosts=asyncHandler(async(req,res)=>{
-    const objectId= new Mongoose.Types.ObjectId(req.user._id);
+    const objectId= new Mongoose.Types.ObjectId(req.user?req.user._id:req.ngo._id);
    /* const likedPosts=await Like.aggregate([
         {$match:{
             likedBy:objectId

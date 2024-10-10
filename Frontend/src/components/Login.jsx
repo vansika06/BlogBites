@@ -37,7 +37,7 @@ import { loaded } from '../features/loading.js'
                 dispatch(loaded())
                 console.log(loading)
                 console.log(userData.data.data);
-                navigate("/")
+                navigate("/main")
               }
             }
         }

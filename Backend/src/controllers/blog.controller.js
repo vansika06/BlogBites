@@ -311,7 +311,9 @@ const getPostByCategory=asyncHandler(async(req,res)=>{
    const {category}=req.params
    const blog=await fetchBlog({category:category},null,0,6)
    if(!blog){
-      throw new ApiError(404,"not found")
+      return res
+      .status(200)
+      .json(new ApiResponse(200,null,"no blogs of this category"))
    }
    console.log(blog)
    return res
@@ -491,7 +493,7 @@ const getBlogsOfType=asyncHandler(async(req,res)=>{
           $regex: /\.(mp4|avi|mov|wmv|flv)$/i },status:"active"},null,blogsPerPage*page,blogsPerPage)
       if(videoBlogs){   
       videoBlogs.forEach((blog)=>
-      blog.isLiked=blog.liked.some((id)=>id.toString()===req.user?._id.toString()))}
+      blog.isLiked=blog.liked.some((id)=>id.toString()===req.user?req.user._id:req.ngo._id.toString()))}
 
       
       if(!videoBlogs){
@@ -511,7 +513,7 @@ const getBlogsOfType=asyncHandler(async(req,res)=>{
 
             if(audioblogs){   
                audioblogs.forEach((blog)=>
-               blog.isLiked=blog.liked.some((id)=>id.toString()===req.user?._id.toString()))}
+               blog.isLiked=blog.liked.some((id)=>id.toString()===req.user?req.user._id:req.ngo._id.toString()))}
          
          if(!audioblogs){
             throw new ApiError(400,"not found")
@@ -591,7 +593,7 @@ const trending=asyncHandler(async(req,res)=>{
                        },
                        isLiked:{
                          $cond:{
-                            if:{$in:[req.user?._id,{$ifNull:["$liked.likedBy",[]]}]},
+                            if:{$in:[req.user?req.user._id:req.ngo._id,{$ifNull:["$liked.likedBy",[]]}]},
                             then:true,
                             else:false
                          }  

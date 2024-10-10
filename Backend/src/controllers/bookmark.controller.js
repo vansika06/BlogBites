@@ -13,7 +13,7 @@ const toggleBookmark=asyncHandler(async(req,res)=>{
     const isMarked=await Bookmark.findOne({user:req.user?req.user._id:req.ngo._id,blog:blogId})
     
     if(!isMarked){
-        const mark=await Bookmark.create({user:req.user?req.user._id:req.ngo._id,blog:blogId})
+        const mark=await Bookmark.create({user:req.user?req.user._id:req.ngo._id,blog:blogId,ownerType:req.user?"User":"Ngo"})
     if(!mark){
         throw new ApiError(500,"something went wrong while marking ")
     }
@@ -38,7 +38,7 @@ else{
 }
 })
 const getAllbookmarks=asyncHandler(async(req,res)=>{
-    const objectId= new Mongoose.Types.ObjectId(req.user._id||req.ngo._id);
+    const objectId= new Mongoose.Types.ObjectId(req.user?._id||req.ngo._id);
     const markedPosts=await Bookmark.find({user:objectId}).populate({path:'blog',populate:{
         path:'owner',
         select:'username avatar fullname _id'
